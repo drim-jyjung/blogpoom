@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>품앗이 Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0e14; --surface:#141821; --surface2:#1a1f2b; --text:#e6e8ec; --muted:#767e91;
+    --border:#232838; --primary:#22d3ee; --primary-dim:#0e7490;
+    --success:#34d399; --warn:#fbbf24; --danger:#f87171;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Pretendard',-apple-system,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);}
+  .shell{display:flex;min-height:100vh;}
+  .sidebar{
+    width:220px;background:var(--surface);border-right:1px solid var(--border);
+    padding:20px 14px;position:sticky;top:0;height:100vh;flex-shrink:0;
+  }
+  .sidebar .brand{font-size:15px;font-weight:700;color:var(--primary);letter-spacing:.5px;margin-bottom:2px;}
+  .sidebar .brand .sub{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;}
+  .navlist{margin-top:24px;display:flex;flex-direction:column;gap:4px;}
+  .navlist button{
+    display:flex;align-items:center;gap:10px;text-align:left;background:none;border:none;color:var(--muted);
+    padding:11px 12px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;
+  }
+  .navlist button .dot{width:6px;height:6px;border-radius:50%;background:var(--border);}
+  .navlist button.active{background:var(--surface2);color:var(--primary);}
+  .navlist button.active .dot{background:var(--primary);}
+  .content{flex:1;padding:24px 26px;max-width:1080px;}
+  .content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+  .content-header h1{font-size:18px;margin:0;font-weight:700;}
+  .pill{background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:12px;padding:6px 12px;border-radius:100px;cursor:pointer;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px;}
+  .card h2{font-size:13px;margin:0 0 14px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;}
+  input{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:10px;font-size:14px;margin-bottom:12px;background:var(--surface2);color:var(--text);font-family:inherit;}
+  input:focus{outline:none;border-color:var(--primary);}
+  button.btn{background:var(--primary);color:#04222a;border:none;padding:11px 16px;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;width:100%;}
+  button.btn.small{width:auto;padding:6px 11px;font-size:12px;border-radius:8px;}
+  button.btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+  button.btn.danger{background:#3a1a1a;color:var(--danger);border:1px solid #4a2222;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;}
+  td{font-family:'Roboto Mono',monospace;font-size:12px;}
+  .table-wrap{overflow-x:auto;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:10.5px;font-weight:700;font-family:'Pretendard',sans-serif;}
+  .badge.ok{background:rgba(52,211,153,.14);color:var(--success);}
+  .badge.wait{background:rgba(251,191,36,.14);color:var(--warn);}
+  .badge.bad{background:rgba(248,113,113,.14);color:var(--danger);}
+  .badge.gray{background:rgba(118,126,145,.14);color:var(--muted);}
+  .msg{font-size:13px;padding:11px 14px;border-radius:10px;margin-bottom:14px;font-weight:600;}
+  .msg.ok{background:rgba(52,211,153,.12);color:var(--success);}
+  .msg.err{background:rgba(248,113,113,.12);color:var(--danger);}
+  .hidden{display:none !important;}
+  .muted{color:var(--muted);font-size:12px;}
+  .loading{text-align:center;padding:24px;color:var(--muted);font-size:13px;}
+  .empty{text-align:center;padding:26px;color:var(--muted);font-size:13px;}
+  .loginwrap{display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%;}
+  .loginbox{width:340px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;}
+  .loginbox h1{font-size:16px;margin:0 0 4px;color:var(--primary);}
+  .loginbox .sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
+  @media (max-width:760px){
+    .shell{flex-direction:column;}
+    .sidebar{width:100%;height:auto;position:relative;padding:14px;}
+    .navlist{flex-direction:row;overflow-x:auto;margin-top:14px;}
+    .navlist button{white-space:nowrap;}
+    .content{padding:16px;}
+  }
+</style>
+</head>
+<body>
+
+  <div id="loginWrap" class="loginwrap hidden">
+    <div class="loginbox">
+      <h1>◆ 품앗이 Admin</h1>
+      <div class="sub">운영자 콘솔 로그인</div>
+      <div id="msgBox"></div>
+      <label>아이디</label>
+      <input id="adId" placeholder="아이디">
+      <label>비밀번호</label>
+      <input id="adPw" type="password" placeholder="비밀번호">
+      <button class="btn" onclick="adminLoginUI()">로그인</button>
+    </div>
+  </div>
+
+  <div id="apiConfigWrap" class="loginwrap hidden">
+    <div class="loginbox">
+      <h1>◆ 서버 연결</h1>
+      <div class="sub">Apps Script 배포 URL을 입력하세요 (최초 1회)</div>
+      <div id="msgBox2"></div>
+      <label>웹앱 URL</label>
+      <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec">
+      <button class="btn" onclick="saveApiUrl()">연결하기</button>
+    </div>
+  </div>
+
+  <div class="shell hidden" id="dashShell">
+    <div class="sidebar">
+      <div class="brand">◆ 품앗이 ADMIN<span class="sub">operator console</span></div>
+      <div class="navlist">
+        <button class="tabBtn active" onclick="switchTab('members')"><span class="dot"></span>회원관리</button>
+        <button class="tabBtn" onclick="switchTab('rooms')"><span class="dot"></span>방관리</button>
+        <button class="tabBtn" onclick="switchTab('visits')"><span class="dot"></span>방문기록</button>
+        <button class="tabBtn" onclick="switchTab('penalties')"><span class="dot"></span>패널티</button>
+        <button class="tabBtn" onclick="switchTab('reports')"><span class="dot"></span>신고</button>
+        <button class="tabBtn" onclick="switchTab('logs')"><span class="dot"></span>로그</button>
+      </div>
+      <div class="muted" id="serverVersion" style="margin-top:20px;font-size:10.5px;">서버 버전 확인 중...</div>
+      <button class="pill" style="margin-top:10px;width:100%;" onclick="adminLogout()">로그아웃</button>
+    </div>
+
+    <div class="content">
+      <div class="content-header">
+        <h1 id="pageTitle">회원관리</h1>
+        <button class="pill" onclick="resetApiUrl()">서버 재설정</button>
+      </div>
+      <div id="msgBoxMain"></div>
+
+      <div id="tab-members">
+        <div class="card"><h2>회원 목록 / 승인</h2><div id="memberList" class="loading">불러오는 중...</div></div>
+      </div>
+
+      <div id="tab-rooms" class="hidden">
+        <div class="card"><h2>품앗이방 전체 현황</h2><div id="roomTable" class="loading">불러오는 중...</div></div>
+        <div class="card"><h2>참여자 현황</h2><div id="participantTable" class="loading">불러오는 중...</div></div>
+      </div>
+
+      <div id="tab-visits" class="hidden">
+        <div class="card"><h2>방문 기록 (최근 300건)</h2><div id="visitTable" class="loading">불러오는 중...</div></div>
+      </div>
+
+      <div id="tab-penalties" class="hidden">
+        <div class="card"><h2>패널티 현황</h2><div id="penaltyTable" class="loading">불러오는 중...</div></div>
+      </div>
+
+      <div id="tab-reports" class="hidden">
+        <div class="card"><h2>신고 접수 현황</h2><div id="reportTable" class="loading">불러오는 중...</div></div>
+      </div>
+
+      <div id="tab-logs" class="hidden">
+        <div class="card"><h2>최근 로그 (최근 200건)</h2><div id="logTable" class="loading">불러오는 중...</div></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyo47d5mrAQH9S9JYdGcNnfsLQkBRWhGQ7smUF5K5OqJyqmFDYkOkfuwbE1PDtw9yjH/exec';
+  let API_URL = DEFAULT_API_URL;
+  try {
+    const saved = localStorage.getItem('PUMASI_API_URL');
+    if (saved && saved.trim()) API_URL = saved.trim();
+  } catch (e) {}
+
+  function initApi(){
+    document.getElementById('loginWrap').classList.remove('hidden');
+  }
+
+  function saveApiUrl(){
+    const v = document.getElementById('apiUrlInput').value.trim();
+    if(!v){ showMsg('URL을 입력해주세요.','err','msgBox2'); return; }
+    localStorage.setItem('PUMASI_API_URL', v);
+    API_URL = v;
+    document.getElementById('apiConfigWrap').classList.add('hidden');
+    document.getElementById('loginWrap').classList.remove('hidden');
+  }
+
+  function resetApiUrl(){
+    const v = prompt('새 배포 URL을 입력하세요 (취소하면 기존 주소 유지)', API_URL);
+    if(!v) return;
+    localStorage.setItem('PUMASI_API_URL', v.trim());
+    location.reload();
+  }
+
+  function apiGet(action, params){
+    const url = new URL(API_URL);
+    url.searchParams.set('action', action);
+    Object.keys(params||{}).forEach(k => url.searchParams.set(k, params[k]));
+    return fetch(url.toString()).then(r => r.json());
+  }
+  function apiPost(action, params){
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action: action }, params || {}))
+    }).then(r => r.json());
+  }
+
+  function showMsg(text, type, boxId){
+    const box = document.getElementById(boxId || 'msgBoxMain');
+    box.innerHTML = '<div class="msg ' + (type||'ok') + '">' + text + '</div>';
+    setTimeout(()=>{ box.innerHTML=''; }, 3000);
+  }
+
+  function adminLoginUI(){
+    const id = document.getElementById('adId').value.trim();
+    const pw = document.getElementById('adPw').value;
+    performAdminLogin(id, pw, true);
+  }
+
+  function performAdminLogin(id, pw, showErrors){
+    apiPost('adminLogin', { id: id, password: pw }).then(res=>{
+      if(res.success){
+        try { localStorage.setItem('PUMASI_ADMIN_SESSION', JSON.stringify({ id: id, password: pw })); } catch(e){}
+        document.getElementById('loginWrap').classList.add('hidden');
+        document.getElementById('dashShell').classList.remove('hidden');
+        loadMembers();
+      } else if(showErrors) showMsg(res.message,'err','msgBox');
+    });
+  }
+
+  function tryRestoreAdminSession(){
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('PUMASI_ADMIN_SESSION') || 'null'); } catch(e){}
+    if(saved && saved.id && saved.password){
+      performAdminLogin(saved.id, saved.password, false);
+    }
+  }
+
+  const titles = { members:'회원관리', rooms:'방관리', visits:'방문기록', penalties:'패널티', reports:'신고', logs:'로그' };
+
+  function switchTab(tab){
+    ['members','rooms','visits','penalties','reports','logs'].forEach(t=>{
+      document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab);
+    });
+    document.querySelectorAll('.tabBtn').forEach(b=>b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById('pageTitle').textContent = titles[tab];
+    if(tab==='members') loadMembers();
+    if(tab==='rooms'){ loadRooms(); loadParticipants(); }
+    if(tab==='visits') loadVisits();
+    if(tab==='penalties') loadPenalties();
+    if(tab==='reports') loadReports();
+    if(tab==='logs') loadLogs();
+  }
+
+  function loadMembers(){
+    document.getElementById('memberList').innerHTML = '<div class="loading">불러오는 중...</div>';
+    apiGet('getUsers').then(users=>{
+      if(!users.length){ document.getElementById('memberList').innerHTML='<div class="empty">회원이 없습니다.</div>'; return; }
+      let html = '<div class="table-wrap"><table><tr><th>닉네임</th><th>블로그</th><th>가입일</th><th>참여</th><th>패널티</th><th>상태</th><th>처리</th></tr>';
+      users.forEach(u=>{
+        const badge = u['계정상태']==='승인' ? 'ok' : (u['계정상태']==='대기' ? 'wait' : 'bad');
+        html += '<tr><td>'+u['닉네임']+'</td><td>'+u['블로그주소']+'</td><td>'+u['가입일']+'</td><td>'+u['참여횟수']+'</td>'
+          + '<td>'+u['패널티상태']+'</td><td><span class="badge '+badge+'">'+u['계정상태']+'</span></td>'
+          + '<td>'
+          + '<button class="btn small" onclick="approveUI(\''+u['닉네임']+'\',true)">승인</button> '
+          + '<button class="btn small secondary" onclick="approveUI(\''+u['닉네임']+'\',false)">반려</button> '
+          + '<button class="btn small danger" onclick="lockUI(\''+u['닉네임']+'\', '+(u['계정상태']!=='잠금')+')">'+(u['계정상태']==='잠금'?'잠금해제':'잠금')+'</button>'
+          + '</td></tr>';
+      });
+      html += '</table></div>';
+      document.getElementById('memberList').innerHTML = html;
+    });
+  }
+
+  function approveUI(nick, approve){
+    apiPost('approveMember', { nickname: nick, approve: approve }).then(res=>{
+      if(res.success){
+        showMsg((approve? '승인' : '반려')+' 처리되었습니다. (현재 상태: '+res['계정상태']+')');
+      } else {
+        showMsg(res.message,'err');
+      }
+      loadMembers();
+    });
+  }
+  function lockUI(nick, lock){
+    apiPost('adminLockUser', { nickname: nick, lock: lock }).then(res=>{
+      showMsg(lock ? '계정을 잠갔습니다.' : '잠금을 해제했습니다.');
+      loadMembers();
+    });
+  }
+
+  function loadRooms(){
+    document.getElementById('roomTable').innerHTML = '<div class="loading">불러오는 중...</div>';
+    apiGet('getRooms').then(rooms=>{
+      if(!rooms.length){ document.getElementById('roomTable').innerHTML='<div class="empty">방이 없습니다.</div>'; return; }
+      let html = '<div class="table-wrap"><table><tr><th>방이름</th><th>RoomID</th><th>유형</th><th>생성자</th><th>시작시간</th><th>대기종료</th><th>마감</th><th>미션</th><th>참석/모집</th><th>상태</th><th>처리</th></tr>';
+      rooms.slice().reverse().forEach(r=>{
+        const isDeleted = r['상태']==='삭제됨';
+        const badge = isDeleted ? 'gray' : (r['상태']==='완료' ? 'gray' : (r['상태']==='진행중' ? 'ok' : 'wait'));
+        html += '<tr><td>'+(r['방이름']||'-')+'</td><td>'+r['RoomID']+'</td><td>'+r['유형']+'</td><td>'+r['생성자']+'</td><td>'+r['시작시간']+'</td>'
+          + '<td>'+(r['대기종료시각']||'-')+'</td><td>'+(r['마감시각']||'-')+'</td><td>'+(r['미션']||'-')+'</td><td>'+r['현재참석']+' / '+r['모집인원']+'</td>'
+          + '<td><span class="badge '+badge+'">'+r['상태']+'</span></td>'
+          + '<td>'+(isDeleted ? '-' : '<button class="btn small danger" onclick="adminDeleteRoomUI(\''+r['RoomID']+'\')">강제삭제</button>')+'</td></tr>';
+      });
+      html += '</table></div>';
+      document.getElementById('roomTable').innerHTML = html;
+    });
+  }
+
+  function adminDeleteRoomUI(roomId){
+    if(!confirm('이 방을 강제 삭제할까요? 참여자가 있어도 삭제됩니다. (참여/방문/패널티 기록은 보존됩니다)')) return;
+    apiPost('adminDeleteRoom', { roomId: roomId }).then(res=>{
+      if(res.success){ showMsg('방을 삭제 처리했습니다.'); loadRooms(); }
+      else showMsg(res.message,'err');
+    });
+  }
+
+  function loadParticipants(){
+    document.getElementById('participantTable').innerHTML = '<div class="loading">불러오는 중...</div>';
+    apiGet('getParticipants').then(list=>{
+      if(!list.length){ document.getElementById('participantTable').innerHTML='<div class="empty">참여 기록이 없습니다.</div>'; return; }
+      let html = '<div class="table-wrap"><table><tr><th>ParticipantID</th><th>RoomID</th><th>닉네임</th><th>참여시각</th><th>키워드/링크</th><th>완료</th></tr>';
+      list.slice().reverse().forEach(p=>{
+        const badge = p['완료여부']==='완료' ? 'ok' : 'wait';
+        html += '<tr><td>'+p['ParticipantID']+'</td><td>'+p['RoomID']+'</td><td>'+p['닉네임']+'</td><td>'+p['참여시각']+'</td>'
+          + '<td>'+(p['개인키워드']||p['개인링크']||'-')+'</td><td><span class="badge '+badge+'">'+p['완료여부']+'</span></td></tr>';
+      });
+      html += '</table></div>';
+      document.getElementById('participantTable').innerHTML = html;
+    });
+  }
+
+  function loadVisits(){
+    document.getElementById('visitTable').innerHTML = '<div class="loading">불러오는 중...</div>';
+    apiGet('getVisits').then(list=>{
+      if(!list.length){ document.getElementById('visitTable').innerHTML='<div class="empty">방문 기록이 없습니다.</div>'; return; }
+      let html = '<div class="table-wrap"><table><tr><th>시각</th><th>RoomID</th><th>방문자</th><th>방문대상</th></tr>';
+      list.forEach(v=>{
+        html += '<tr><td>'+v['시각']+'</td><td>'+v['RoomID']+'</td><td>'+v['방문자']+'</td><td>'+v['방문대상']+'</td></tr>';
+      });
+      html += '</table></div>';
+      document.getElementById('visitTable').innerHTML = html;
+    });
+  }
+
+  function loadPenalties(){
+    document.getElementById('penaltyTable').innerHTML = '<div class="loading">불러오는 중...</div>';
+    apiGet('getPenalties').then(list=>{
+      if(!list.length){ document.getElementById('penaltyTable').innerHTML='<div class="empty">패널티 기록이 없습니다.</div>'; return; }
+      let html = '<div class="table-wrap"><table><tr><th>PenaltyID</th><th>닉네임</th><th>발생일</th><th>사유</th><th>RoomID</th><th>해제</th><th>처리</th></tr>';
+      list.slice().reverse().forEach(p=>{
+        html += '<tr><td>'+p['PenaltyID']+'</td><td>'+p['닉네임']+'</td><td>'+p['발생일']+'</td><td>'+p['사유']+'</td><td>'+p['RoomID']+'</td>'
+          + '<td>'+p['해제여부']+'</td>'
+          + '<td>'+(p['해제여부']==='미해제' ? '<button class="btn small" onclick="removePenaltyUI(\''+p['PenaltyID']+'\')">즉시해제</button>' : '-')+'</td></tr>';
+      });
+      html += '</table></div>';
+      document.getElementById('penaltyTable').innerHTML = html;
+    });
+  }
+  function removePenaltyUI(pid){
+    apiPost('adminRemovePenalty', { penaltyId: pid }).then(res=>{
+      showMsg('패널티를 해제했습니다.');
+      loadPenalties();
+    });
+  }
+
+  function loadReports(){
+    document.getElementById('reportTable').innerHTML = '<div class="loading">불러오는 중...</div>';
+    apiGet('getReports').then(list=>{
+      if(!list.length){ document.getElementById('reportTable').innerHTML='<div class="empty">신고 내역이 없습니다.</div>'; return; }
+      let html = '<div class="table-wrap"><table><tr><th>ReportID</th><th>신고자</th><th>대상자</th><th>RoomID</th><th>사유</th><th>상태</th><th>처리</th></tr>';
+      list.slice().reverse().forEach(r=>{
+        html += '<tr><td>'+r['ReportID']+'</td><td>'+r['신고자']+'</td><td>'+r['대상자']+'</td><td>'+r['RoomID']+'</td><td>'+r['사유']+'</td>'
+          + '<td>'+r['처리상태']+'</td>'
+          + '<td>'+(r['처리상태']==='대기' ? '<button class="btn small" onclick="resolveReportUI(\''+r['ReportID']+'\')">확인완료</button>' : '-')+'</td></tr>';
+      });
+      html += '</table></div>';
+      document.getElementById('reportTable').innerHTML = html;
+    });
+  }
+  function resolveReportUI(rid){
+    apiPost('resolveReport', { reportId: rid }).then(res=>{
+      showMsg('신고를 처리 완료했습니다.');
+      loadReports();
+    });
+  }
+
+  function loadLogs(){
+    document.getElementById('logTable').innerHTML = '<div class="loading">불러오는 중...</div>';
+    apiGet('getLogs').then(list=>{
+      if(!list.length){ document.getElementById('logTable').innerHTML='<div class="empty">로그가 없습니다.</div>'; return; }
+      let html = '<div class="table-wrap"><table><tr><th>시각</th><th>유형</th><th>닉네임</th><th>대상</th><th>상세</th></tr>';
+      list.forEach(l=>{
+        html += '<tr><td>'+l['시각']+'</td><td>'+l['유형']+'</td><td>'+l['닉네임']+'</td><td>'+l['대상']+'</td><td>'+l['상세']+'</td></tr>';
+      });
+      html += '</table></div>';
+      document.getElementById('logTable').innerHTML = html;
+    });
+  }
+
+  function adminLogout(){
+    try { localStorage.removeItem('PUMASI_ADMIN_SESSION'); } catch(e){}
+    location.reload();
+  }
+
+  initApi();
+  tryRestoreAdminSession();
+  apiGet('version').then(v=>{
+    document.getElementById('serverVersion').textContent = '서버 v' + v.version + ' · ' + v.checkedAt;
+  }).catch(()=>{
+    document.getElementById('serverVersion').textContent = '서버 버전 확인 실패 (구버전 배포 가능성)';
+  });
+</script>
+</body>
+</html>

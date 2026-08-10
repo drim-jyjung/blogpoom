@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>품앗이</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4fbf9; --surface:#ffffff; --text:#0f1c1a; --muted:#5b6d6a; --border:#e2f0ec;
+    --grad1:#10b981; --grad2:#06b6d4; --primary:#0d9488;
+    --success:#10b981; --warn:#f59e0b; --danger:#ef4444;
+    --type-keyword:#0e9c6c; --type-keyword-bg:#e3f7ee;
+    --type-link:#2563eb; --type-link-bg:#e6eefd;
+    --radius:20px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Pretendard',-apple-system,'Malgun Gothic',sans-serif;background:var(--bg);color:var(--text);}
+  .topbar{
+    position:sticky;top:0;z-index:20;padding:18px 20px 14px;
+    background:linear-gradient(135deg,var(--grad1),var(--grad2));color:#fff;
+    border-bottom-left-radius:24px;border-bottom-right-radius:24px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .topbar .logo{font-size:19px;font-weight:800;letter-spacing:-0.5px;}
+  .topbar .logo span{opacity:.85;font-weight:600;font-size:12px;display:block;margin-top:2px;}
+  .iconbtn{background:rgba(255,255,255,.22);border:none;color:#fff;min-width:34px;height:34px;padding:0 12px;border-radius:12px;font-size:12.5px;font-weight:700;cursor:pointer;}
+  main{max-width:720px;margin:0 auto;padding:16px;padding-bottom:96px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(16,185,129,0.06);}
+  .card h2{font-size:15px;margin:0 0 14px;font-weight:700;}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-weight:600;}
+  input,select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;font-size:14px;margin-bottom:12px;background:#fcfefd;font-family:inherit;}
+  input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  button.btn{
+    background:linear-gradient(135deg,var(--grad1),var(--grad2));color:#fff;border:none;
+    padding:14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;width:100%;
+    box-shadow:0 6px 16px rgba(16,185,129,0.28);
+  }
+  button.btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;}
+  button.btn.ghost{background:#e6f8f2;color:var(--primary);box-shadow:none;}
+  button.btn.outline{background:#fff;color:var(--danger);border:1.5px solid #fde2e1;box-shadow:none;}
+  button.btn.small{width:auto;padding:9px 14px;font-size:12.5px;border-radius:12px;}
+  .segment{display:flex;background:#e6f8f2;border-radius:16px;padding:4px;margin-bottom:16px;}
+  .segment button{flex:1;border:none;background:transparent;padding:10px;border-radius:12px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;}
+  .segment button.active{background:#fff;color:var(--primary);box-shadow:0 2px 6px rgba(16,185,129,0.16);}
+  #roomTabKw.active, #createTabKw.active{color:var(--type-keyword);}
+  #roomTabLk.active, #createTabLk.active{color:var(--type-link);}
+  .chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:700;}
+  .chip.wait{background:#fff4e0;color:#b3720b;}
+  .chip.ok{background:#e6f9f1;color:#0e9c6c;}
+  .chip.gray{background:#f0eef4;color:#8b8798;}
+  .chip.bad{background:#fdeceb;color:#e0453d;}
+  .missionchip{display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border:1.5px solid var(--border);border-radius:14px;font-size:13px;font-weight:600;cursor:pointer;user-select:none;}
+  .missionchip input{width:auto;margin:0;}
+  .missionchip.checked{border-color:var(--primary);background:#e1faf1;color:var(--primary);}
+  .roomcard{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;}
+  .roomcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(180deg,var(--grad1),var(--grad2));}
+  .roomcard.type-keyword::before{background:var(--type-keyword);}
+  .roomcard.type-link::before{background:var(--type-link);}
+  .roomcard .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;padding-left:6px;}
+  .roomcard .name{font-size:15.5px;font-weight:800;color:var(--text);}
+  .typechip{display:inline-flex;align-items:center;padding:2px 9px;border-radius:100px;font-size:10.5px;font-weight:800;margin-right:6px;}
+  .typechip.type-keyword{background:var(--type-keyword-bg);color:var(--type-keyword);}
+  .typechip.type-link{background:var(--type-link-bg);color:var(--type-link);}
+  .participantlist.type-keyword{background:var(--type-keyword-bg);}
+  .participantlist.type-link{background:var(--type-link-bg);}
+  button.btn.visit.type-keyword{background:var(--type-keyword);color:#fff;}
+  button.btn.visit.type-link{background:var(--type-link);color:#fff;}
+  button.btn.visited.type-keyword{background:#d3f0e4;color:var(--type-keyword);}
+  button.btn.visited.type-link{background:#d9e6fd;color:var(--type-link);}
+  .participantlist{margin-top:10px;padding:10px;background:#f2f9f7;border-radius:14px;}
+  .participantitem{background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+  .participantitem:last-child{margin-bottom:0;}
+  .participantitem .pname{font-size:13px;font-weight:700;}
+  .participantitem .pactions{display:flex;gap:6px;flex-wrap:wrap;}
+  button.btn.visit{background:#0d9488;color:#fff;box-shadow:none;}
+  button.btn.visited{background:#d8f0ea;color:#0d9488;box-shadow:none;}
+  .roomcard .meta{font-size:12px;color:var(--muted);padding-left:6px;}
+  .roomcard .actions{display:flex;gap:8px;margin-top:10px;padding-left:6px;flex-wrap:wrap;}
+  .preview{font-size:12.5px;color:var(--primary);font-weight:700;margin:-4px 0 12px;padding-left:2px;}
+  .hint{font-size:11.5px;color:var(--muted);margin:-6px 0 12px;}
+  .msg{font-size:13px;padding:12px 14px;border-radius:14px;margin-bottom:10px;font-weight:600;}
+  .msg.ok{background:#e6f9f1;color:#0e9c6c;}
+  .msg.err{background:#fdeceb;color:#e0453d;}
+  .hidden{display:none !important;}
+  .muted{color:var(--muted);font-size:12px;}
+  .loading{text-align:center;padding:26px;color:var(--muted);font-size:13px;}
+  .empty{text-align:center;padding:30px 10px;color:var(--muted);font-size:13px;}
+  .badgebar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .statuspill{flex:1;min-width:140px;border-radius:16px;padding:12px 14px;font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+  .statuspill.safe{background:#e6f9f1;color:#0e9c6c;}
+  .statuspill.alert{background:#fdeceb;color:#e0453d;}
+  .lockbanner{background:#fdeceb;color:#c0392b;border-radius:16px;padding:16px;margin-bottom:14px;font-size:13.5px;font-weight:700;text-align:center;}
+
+  .bottomnav{
+    position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);
+    display:flex;padding:8px 10px calc(8px + env(safe-area-inset-bottom));z-index:20;
+    box-shadow:0 -4px 16px rgba(0,0,0,0.04);
+  }
+  .bottomnav button{
+    flex:1;background:none;border:none;padding:8px 4px;font-size:11px;font-weight:700;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;
+  }
+  .bottomnav button .ic{font-size:19px;}
+  .bottomnav button.active{color:var(--primary);}
+  .bottomnav button:nth-child(1).active{color:var(--type-keyword);}
+  .bottomnav button:nth-child(2).active{color:var(--type-link);}
+  .bottomnav button:nth-child(3).active{color:#7c3aed;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{padding:8px 6px;border-bottom:1px solid var(--border);text-align:left;}
+  th{color:var(--muted);font-weight:700;font-size:11px;}
+
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(15,28,26,0.45);z-index:50;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-box{
+    background:var(--surface);border-radius:20px;padding:26px 22px;max-width:340px;width:100%;
+    box-shadow:0 12px 32px rgba(0,0,0,0.18);text-align:center;
+  }
+  .modal-msg{font-size:14.5px;font-weight:700;line-height:1.5;margin-bottom:18px;white-space:pre-line;}
+
+  .progress-wrap{width:100%;height:6px;background:#e6f8f2;border-radius:100px;margin-top:10px;overflow:hidden;}
+  .progress-bar{height:100%;width:30%;background:linear-gradient(90deg,var(--grad1),var(--grad2));border-radius:100px;animation:progressMove 1s infinite ease-in-out;}
+  @keyframes progressMove{
+    0%{margin-left:0%;width:20%;}
+    50%{margin-left:60%;width:40%;}
+    100%{margin-left:0%;width:20%;}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="logo">품앗이 🌸<span>블로그 자동 운영 플랫폼</span></div>
+    <div id="userInfoBar"></div>
+  </div>
+
+  <main>
+    <div id="msgBox"></div>
+
+    <div id="apiConfigBar" class="card hidden">
+      <h2>서버 연결하기</h2>
+      <label>Apps Script 배포 URL</label>
+      <input id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec">
+      <button class="btn" onclick="saveApiUrl()">연결하고 시작하기</button>
+    </div>
+
+    <div id="bootLoading" class="loading hidden">로그인 확인 중...</div>
+
+    <div id="authSection" class="card hidden">
+      <div class="segment">
+        <button id="tabLoginBtn" class="active" onclick="switchAuth('login')">로그인</button>
+        <button id="tabSignupBtn" onclick="switchAuth('signup')">회원가입</button>
+      </div>
+      <div id="loginForm">
+        <label>닉네임</label>
+        <input id="loginNick" placeholder="닉네임을 입력하세요">
+        <label>비밀번호</label>
+        <input id="loginPw" type="password" placeholder="비밀번호를 입력하세요">
+        <button class="btn" onclick="doLogin()">로그인</button>
+      </div>
+      <div id="signupForm" class="hidden">
+        <label>닉네임</label>
+        <input id="suNick" placeholder="닉네임">
+        <label>비밀번호(블로그 아이디)</label>
+        <input id="suPw" type="password" placeholder="비밀번호">
+        <label>블로그 주소</label>
+        <input id="suBlog" placeholder="https://blog.naver.com/...">
+        <button class="btn" onclick="doSignup()">가입 신청하기</button>
+        <p class="muted">가입 신청 후 운영자 승인이 필요해요.</p>
+      </div>
+    </div>
+
+    <div id="appSection" class="hidden">
+      <div class="badgebar" id="badgeBar"></div>
+      <div id="lockBanner" class="lockbanner hidden">🔒 계정이 잠겨있어요. 아래 "마이" 탭에서 패널티 내역을 확인하고 해결해주세요. 방목록/방만들기는 잠금 해제 후 이용 가능합니다.</div>
+
+      <div id="tab-rooms">
+        <div class="segment">
+          <button id="roomTabKw" class="active" onclick="switchRoomType('키워드')">⌨️ 키워드방</button>
+          <button id="roomTabLk" onclick="switchRoomType('링크')">🔗 링크방</button>
+        </div>
+        <div class="card">
+          <h2 id="roomListTitle">🔥 오늘의 키워드방</h2>
+          <div id="roomList" class="loading">불러오는 중...</div>
+        </div>
+      </div>
+
+      <div id="tab-create" class="hidden">
+        <div class="segment">
+          <button id="createTabKw" class="active" onclick="switchCreateType('keyword')">⌨️ 키워드방</button>
+          <button id="createTabLk" onclick="switchCreateType('link')">🔗 링크방</button>
+        </div>
+
+        <div class="card" id="createPane-keyword">
+          <h2>⌨️ 키워드 품앗이 만들기</h2>
+          <div class="hint">키워드방은 시간이 고정이에요: 대기 15분 + 진행 15분 = 총 30분</div>
+          <label>방 이름 (비워두면 자동 생성)</label>
+          <input id="kwName" placeholder="예: 10시 댓글방">
+          <label>시작 시간 (한국시간 기준)</label>
+          <input type="datetime-local" id="kwStart" oninput="updatePreview('kw')">
+          <label>모집 인원</label>
+          <input type="number" id="kwCap" value="5" min="1" onwheel="this.blur()">
+          <label>원하는 품앗이 (복수선택 가능)</label>
+          <div class="grid3" style="margin-bottom:12px;">
+            <label class="missionchip" onclick="toggleMission(this)"><input type="checkbox" class="kwMission" value="공감" onchange="updatePreview('kw')"> 👍 공감</label>
+            <label class="missionchip" onclick="toggleMission(this)"><input type="checkbox" class="kwMission" value="댓글" onchange="updatePreview('kw')"> 💬 댓글</label>
+            <label class="missionchip" onclick="toggleMission(this)"><input type="checkbox" class="kwMission" value="스크랩" onchange="updatePreview('kw')"> ⭐ 스크랩</label>
+          </div>
+          <div class="preview" id="kwPreview">미리보기: 품앗이방</div>
+          <button class="btn" id="kwCreateBtn" onclick="createKw()">키워드방 만들기</button>
+          <div class="progress-wrap hidden" id="kwProgressWrap"><div class="progress-bar" id="kwProgressBar"></div></div>
+        </div>
+
+        <div class="card hidden" id="createPane-link">
+          <h2>🔗 링크 품앗이 만들기</h2>
+          <div class="hint">대기시간/진행시간을 자유롭게 정할 수 있어요. 급하면 짧게, 여유있게 하고 싶으면 길게!</div>
+          <label>방 이름 (비워두면 자동 생성)</label>
+          <input id="lkName" placeholder="예: 10시 댓글방">
+          <label>시작 시간 (한국시간 기준)</label>
+          <input type="datetime-local" id="lkStart" oninput="updatePreview('lk')">
+          <div class="grid3">
+            <div><label>모집 인원</label><input type="number" id="lkCap" value="5" min="1" onwheel="this.blur()"></div>
+            <div><label>대기시간(분)</label><input type="number" id="lkWait" value="10" min="1" onwheel="this.blur()"></div>
+            <div><label>진행시간(분)</label><input type="number" id="lkProgress" value="20" min="1" onwheel="this.blur()"></div>
+          </div>
+          <label>원하는 품앗이 (복수선택 가능)</label>
+          <div class="grid3" style="margin-bottom:12px;">
+            <label class="missionchip" onclick="toggleMission(this)"><input type="checkbox" class="lkMission" value="공감" onchange="updatePreview('lk')"> 👍 공감</label>
+            <label class="missionchip" onclick="toggleMission(this)"><input type="checkbox" class="lkMission" value="댓글" onchange="updatePreview('lk')"> 💬 댓글</label>
+            <label class="missionchip" onclick="toggleMission(this)"><input type="checkbox" class="lkMission" value="스크랩" onchange="updatePreview('lk')"> ⭐ 스크랩</label>
+          </div>
+          <div class="preview" id="lkPreview">미리보기: 품앗이방</div>
+          <button class="btn" id="lkCreateBtn" onclick="createLk()">링크방 만들기</button>
+          <div class="progress-wrap hidden" id="lkProgressWrap"><div class="progress-bar" id="lkProgressBar"></div></div>
+        </div>
+      </div>
+
+      <div id="tab-my" class="hidden">
+        <div class="card">
+          <h2>📋 내 참여 내역</h2>
+          <button class="btn ghost" onclick="copyMyParticipations()">내 참여방 목록 복사</button>
+        </div>
+        <div class="card">
+          <h2>📅 주간 참여 캘린더</h2>
+          <div id="calendarBox" class="loading">불러오는 중...</div>
+        </div>
+        <div class="card">
+          <h2>⚠️ 패널티 현황</h2>
+          <div id="penaltyBox" class="loading">불러오는 중...</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="bottomnav" id="bottomNav" style="display:none;">
+    <button class="tabBtn active" onclick="switchTab('rooms')"><span class="ic">🏠</span>방목록</button>
+    <button class="tabBtn" onclick="switchTab('create')"><span class="ic">➕</span>방만들기</button>
+    <button class="tabBtn" onclick="switchTab('my')"><span class="ic">👤</span>마이</button>
+  </div>
+
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-msg" id="modalMsg"></div>
+      <button class="btn" id="modalConfirmBtn" onclick="closeModal()">확인</button>
+    </div>
+  </div>
+
+<script>
+  const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbyo47d5mrAQH9S9JYdGcNnfsLQkBRWhGQ7smUF5K5OqJyqmFDYkOkfuwbE1PDtw9yjH/exec';
+  let API_URL = DEFAULT_API_URL;
+  try {
+    const saved = localStorage.getItem('PUMASI_API_URL');
+    if (saved && saved.trim()) API_URL = saved.trim();
+  } catch (e) {}
+
+  let currentUser = null;
+  let currentRoomType = '키워드';
+  let joining = false;
+
+  function initApi(){
+    if(!API_URL){ document.getElementById('apiConfigBar').classList.remove('hidden'); return false; }
+    return true;
+  }
+  function saveApiUrl(){
+    const v = document.getElementById('apiUrlInput').value.trim();
+    if(!v){ showMsg('URL을 입력해주세요.','err'); return; }
+    localStorage.setItem('PUMASI_API_URL', v);
+    API_URL = v;
+    document.getElementById('apiConfigBar').classList.add('hidden');
+    boot();
+  }
+  function resetApiUrl(){
+    const v = prompt('새 배포 URL을 입력하세요 (취소하면 기존 주소 유지)', API_URL);
+    if(!v) return;
+    localStorage.setItem('PUMASI_API_URL', v.trim());
+    location.reload();
+  }
+  function apiGet(action, params){
+    const url = new URL(API_URL);
+    url.searchParams.set('action', action);
+    Object.keys(params||{}).forEach(k => url.searchParams.set(k, params[k]));
+    return fetch(url.toString()).then(r => r.json());
+  }
+  function apiPost(action, params){
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action: action }, params || {}))
+    }).then(r => r.json());
+  }
+  function showMsg(text, type){
+    const box = document.getElementById('msgBox');
+    box.innerHTML = '<div class="msg ' + (type||'ok') + '">' + text + '</div>';
+    setTimeout(()=>{ box.innerHTML=''; }, 3000);
+  }
+
+  let modalOnConfirm = null;
+  function openModal(text, onConfirm){
+    document.getElementById('modalMsg').textContent = text;
+    modalOnConfirm = onConfirm || null;
+    document.getElementById('modalOverlay').classList.remove('hidden');
+  }
+  function closeModal(){
+    document.getElementById('modalOverlay').classList.add('hidden');
+    const cb = modalOnConfirm;
+    modalOnConfirm = null;
+    if(cb) cb();
+  }
+
+  function switchAuth(mode){
+    document.getElementById('tabLoginBtn').classList.toggle('active', mode==='login');
+    document.getElementById('tabSignupBtn').classList.toggle('active', mode==='signup');
+    document.getElementById('loginForm').classList.toggle('hidden', mode!=='login');
+    document.getElementById('signupForm').classList.toggle('hidden', mode!=='signup');
+  }
+
+  function doSignup(){
+    const nick = document.getElementById('suNick').value.trim();
+    const pw = document.getElementById('suPw').value;
+    const blog = document.getElementById('suBlog').value.trim();
+    if(!nick||!pw||!blog){ showMsg('모든 항목을 입력해주세요.','err'); return; }
+    apiPost('signup', { nickname: nick, password: pw, blogUrl: blog }).then(res=>{
+      if(res.success){
+        document.getElementById('suNick').value = '';
+        document.getElementById('suPw').value = '';
+        document.getElementById('suBlog').value = '';
+        openModal('가입신청이 완료되었습니다.\n관리자 승인 후 이용 가능합니다.', function(){
+          switchAuth('login');
+        });
+      } else showMsg(res.message,'err');
+    });
+  }
+
+  function performLogin(nick, pw, showErrors){
+    return apiPost('login', { nickname: nick, password: pw }).then(res=>{
+      if(res.success){
+        currentUser = res.user;
+        try { localStorage.setItem('PUMASI_SESSION', JSON.stringify({ nickname: nick, password: pw })); } catch(e){}
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('bootLoading').classList.add('hidden');
+        document.getElementById('appSection').classList.remove('hidden');
+        document.getElementById('bottomNav').style.display = 'flex';
+        document.getElementById('userInfoBar').innerHTML = '<button class="iconbtn" onclick="logout()">로그아웃</button>';
+        renderDashboard();
+      } else {
+        try { localStorage.removeItem('PUMASI_SESSION'); } catch(e){}
+        document.getElementById('bootLoading').classList.add('hidden');
+        document.getElementById('authSection').classList.remove('hidden');
+        if(showErrors) showMsg(res.message,'err');
+      }
+    }).catch(()=>{
+      document.getElementById('bootLoading').classList.add('hidden');
+      document.getElementById('authSection').classList.remove('hidden');
+    });
+  }
+
+  function doLogin(){
+    const nick = document.getElementById('loginNick').value.trim();
+    const pw = document.getElementById('loginPw').value;
+    performLogin(nick, pw, true);
+  }
+
+  // 저장된 세션이 있으면 로그인 화면을 먼저 보여주지 않고, 확인 중 로딩만 표시한 뒤
+  // 결과에 따라 바로 앱 화면 또는 로그인 화면으로 전환 (새로고침 시 화면 깜빡임 방지)
+  function boot(){
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('PUMASI_SESSION') || 'null'); } catch(e){}
+    if(saved && saved.nickname && saved.password){
+      document.getElementById('bootLoading').classList.remove('hidden');
+      performLogin(saved.nickname, saved.password, false);
+    } else {
+      document.getElementById('authSection').classList.remove('hidden');
+    }
+  }
+
+  function logout(){
+    currentUser = null;
+    try { localStorage.removeItem('PUMASI_SESSION'); } catch(e){}
+    document.getElementById('appSection').classList.add('hidden');
+    document.getElementById('bottomNav').style.display = 'none';
+    document.getElementById('authSection').classList.remove('hidden');
+    document.getElementById('userInfoBar').innerHTML = '';
+  }
+
+  function renderDashboard(){
+    const hasPenalty = currentUser['패널티상태'] === '패널티';
+    const isLocked = currentUser['계정상태'] === '잠금';
+    document.getElementById('badgeBar').innerHTML =
+      '<div class="statuspill '+(hasPenalty?'alert':'safe')+'">패널티 '+(hasPenalty?'있음 ⚠️':'없음 ✅')+'</div>'
+      + '<div class="statuspill '+(isLocked?'alert':'safe')+'">계정잠금 '+(isLocked?'있음 🔒':'없음 ✅')+'</div>';
+
+    document.getElementById('lockBanner').classList.toggle('hidden', !isLocked);
+    document.querySelectorAll('.bottomnav .tabBtn')[0].disabled = isLocked;
+    document.querySelectorAll('.bottomnav .tabBtn')[1].disabled = isLocked;
+
+    if(isLocked){
+      switchTabProgrammatic('my');
+    } else {
+      loadRooms();
+    }
+  }
+
+  function switchTab(tab){
+    if(currentUser && currentUser['계정상태']==='잠금' && tab!=='my'){
+      showMsg('계정이 잠겨있어 이용할 수 없어요. 마이 탭에서 확인해주세요.','err');
+      return;
+    }
+    ['rooms','create','my'].forEach(t=>{
+      document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab);
+    });
+    document.querySelectorAll('.bottomnav .tabBtn').forEach(b=>b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    if(tab==='rooms') loadRooms();
+    if(tab==='my') loadMyInfo();
+  }
+
+  function switchTabProgrammatic(tab){
+    ['rooms','create','my'].forEach(t=>{
+      document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab);
+    });
+    const idx = tab==='rooms'?0:(tab==='create'?1:2);
+    document.querySelectorAll('.bottomnav .tabBtn').forEach((b,i)=> b.classList.toggle('active', i===idx));
+    if(tab==='rooms') loadRooms();
+    if(tab==='my') loadMyInfo();
+  }
+
+  function toggleMission(label){
+    const cb = label.querySelector('input');
+    setTimeout(()=> label.classList.toggle('checked', cb.checked), 0);
+  }
+  function switchCreateType(type){
+    document.getElementById('createTabKw').classList.toggle('active', type==='keyword');
+    document.getElementById('createTabLk').classList.toggle('active', type==='link');
+    document.getElementById('createPane-keyword').classList.toggle('hidden', type!=='keyword');
+    document.getElementById('createPane-link').classList.toggle('hidden', type!=='link');
+  }
+  function switchRoomType(type){
+    currentRoomType = type;
+    document.getElementById('roomTabKw').classList.toggle('active', type==='키워드');
+    document.getElementById('roomTabLk').classList.toggle('active', type==='링크');
+    document.getElementById('roomListTitle').textContent = '🔥 오늘의 ' + type + '방';
+    loadRooms();
+  }
+
+  function hourFrom(inputId){
+    const v = document.getElementById(inputId).value;
+    if(!v) return null;
+    return new Date(v).getHours();
+  }
+  function updatePreview(prefix){
+    const h = hourFrom(prefix+'Start');
+    const missions = Array.from(document.querySelectorAll('.'+prefix+'Mission:checked')).map(c=>c.value);
+    const label = missions.length ? missions.join(' ') : '품앗이';
+    const txt = (h===null? '' : h+'시 ') + label + '방';
+    document.getElementById(prefix+'Preview').textContent = '미리보기: ' + txt;
+  }
+
+  function loadRooms(){
+    document.getElementById('roomList').innerHTML = '<div class="loading">불러오는 중...</div>';
+    apiGet('getTodayRooms', { type: currentRoomType }).then(rooms=>{
+      if(!rooms.length){ document.getElementById('roomList').innerHTML = '<div class="empty">오늘 운영 중인 '+currentRoomType+'방이 없어요 🙂</div>'; return; }
+      let html = '';
+      rooms.slice().reverse().forEach(r=>{
+        const chipClass = r['상태']==='완료' ? 'gray' : (r['상태']==='진행중' ? 'ok' : 'wait');
+        const name = r['방이름'] || r['RoomID'];
+        const isOwner = currentUser && r['생성자'] === currentUser['닉네임'];
+        const isFull = r['정원마감여부'];
+        const canJoin = r['상태']==='대기' && !isFull;
+        let joinBtn = '';
+        if(r['상태']==='대기'){
+          joinBtn = isFull
+            ? '<button class="btn small" disabled>모집마감</button>'
+            : '<button class="btn small" id="joinbtn-'+r['RoomID']+'" onclick="joinRoomUI(\''+r['RoomID']+'\',\''+r['유형']+'\')">참여하기</button>';
+        }
+        html += '<div class="roomcard '+(r['유형']==='키워드'?'type-keyword':'type-link')+'">'
+          + '<div class="top"><div><div class="name"><span class="typechip '+(r['유형']==='키워드'?'type-keyword':'type-link')+'">'+r['유형']+'</span>'+name+'</div><div class="meta">'+r['생성자']+' · 미션: '+(r['미션']||'-')+'</div></div>'
+          + '<span class="chip '+chipClass+'">'+r['상태']+'</span></div>'
+          + '<div class="meta">👥 참석 '+r['현재참석']+' / 모집 '+r['모집인원']+'명</div>'
+          + '<div class="meta">🕐 시작 '+r['시작시간']+'</div>'
+          + '<div class="meta">⏳ 대기종료 '+r['대기종료시각']+' · 🏁 마감 '+r['마감시각']+' (KST)</div>'
+          + '<div class="actions">'
+          + joinBtn
+          + '<button class="btn small ghost" onclick="toggleDetail(\''+r['RoomID']+'\')">참여자보기</button>'
+          + (isOwner ? '<button class="btn small outline" onclick="deleteRoomUI(\''+r['RoomID']+'\')">삭제</button>' : '')
+          + '</div><div id="detail-'+r['RoomID']+'"></div>'
+          + '</div>';
+      });
+      document.getElementById('roomList').innerHTML = html;
+    });
+  }
+
+  function deleteRoomUI(roomId){
+    if(!confirm('이 방을 삭제할까요? 참여자가 있으면 삭제할 수 없어요.')) return;
+    apiPost('deleteRoom', { roomId: roomId, nickname: currentUser['닉네임'] }).then(res=>{
+      if(res.success){ showMsg('방이 삭제되었습니다.'); loadRooms(); }
+      else showMsg(res.message,'err');
+    });
+  }
+
+  function joinRoomUI(roomId, type){
+    if(!currentUser){ showMsg('로그인이 필요해요.','err'); return; }
+    if(joining) return;
+    let kw='', link='';
+    if(type==='키워드'){
+      const input = prompt('등록할 키워드를 입력하세요 (취소 시 참여되지 않습니다)');
+      if(input === null){ showMsg('참여가 취소되었습니다.','err'); return; }
+      kw = input.trim();
+      if(!kw){ showMsg('키워드를 입력해야 참여할 수 있어요.','err'); return; }
+    } else {
+      const input = prompt('본인 게시글 링크를 입력하세요 (취소 시 참여되지 않습니다)');
+      if(input === null){ showMsg('참여가 취소되었습니다.','err'); return; }
+      link = input.trim();
+      if(!link){ showMsg('링크를 입력해야 참여할 수 있어요.','err'); return; }
+      if(!/^https?:\/\//i.test(link)){ showMsg('링크는 http(s):// 로 시작해야 해요.','err'); return; }
+    }
+    const btn = document.getElementById('joinbtn-'+roomId);
+    joining = true;
+    if(btn){ btn.disabled = true; btn.textContent = '참여 처리중...'; }
+    apiPost('join', { roomId: roomId, nickname: currentUser['닉네임'], personalKeyword: kw, personalLink: link }).then(res=>{
+      joining = false;
+      if(btn){ btn.disabled = false; btn.textContent = '참여하기'; }
+      if(res.success) showMsg('참여 완료! 참여횟수가 +1 되었어요.');
+      else showMsg(res.message,'err');
+    });
+  }
+
+  function toggleDetail(roomId){
+    const box = document.getElementById('detail-'+roomId);
+    if(box.dataset.open === '1'){ box.innerHTML=''; box.dataset.open='0'; return; }
+    box.dataset.open = '1';
+    renderRoomDetail(roomId, box);
+  }
+
+  function renderRoomDetail(roomId, box){
+    box.innerHTML = '<div class="loading">불러오는 중...</div>';
+    Promise.all([
+      apiGet('getRoomParticipants', { roomId: roomId }),
+      apiGet('getMyVisits', { roomId: roomId, nickname: currentUser['닉네임'] }),
+      apiGet('getRooms')
+    ]).then(function(results){
+      const list = results[0], myVisits = results[1], allRooms = results[2];
+      const room = allRooms.find(function(r){ return r['RoomID']===roomId; }) || {};
+      const isClosed = room['상태']==='완료';
+      const isKeyword = room['유형']==='키워드';
+      const visitLabel = isKeyword ? '방문' : '참석';
+      const typeClass = isKeyword ? 'type-keyword' : 'type-link';
+      if(!list.length){ box.innerHTML = '<div class="empty" style="padding:14px 0;">아직 참여자가 없어요.</div>'; return; }
+      let html = '<div class="participantlist '+typeClass+'">';
+      list.forEach(function(p){
+        const isMe = p['닉네임'] === currentUser['닉네임'];
+        const visited = myVisits.indexOf(p['닉네임']) !== -1;
+        const doneBadge = p['완료여부']==='완료' ? 'ok' : 'wait';
+        html += '<div class="participantitem">'
+          + '<div><div class="pname">'+p['닉네임']+(isMe?' (나)':'')+'</div>';
+        if(isMe){
+          const myVal = room['유형']==='키워드' ? p['개인키워드'] : p['개인링크'];
+          html += '<div class="meta">내 등록값: '+(myVal||'-')+'</div></div>'
+            + '<span class="chip '+doneBadge+'">'+p['완료여부']+'</span></div>';
+        } else {
+          const val = room['유형']==='키워드' ? p['개인키워드'] : p['개인링크'];
+          const escVal = (val||'').replace(/'/g,"\\'");
+          html += '<div class="meta">'+(val||'-')+'</div></div>'
+            + '<div class="pactions">'
+            + '<span class="chip '+(visited?'ok':'gray')+'">'+(visited?visitLabel+'완료':visitLabel+'대기')+'</span>'
+            + '<button class="btn small ghost" onclick="copyAndPreview(\''+escVal+'\',\''+room['유형']+'\')">복사</button>'
+            + '<button class="btn small '+(visited?'visited':'visit')+' '+typeClass+'" id="visitbtn-'+roomId+'-'+p['닉네임']+'" onclick="visitUI(\''+roomId+'\',\''+p['닉네임']+'\',\''+escVal+'\',\''+room['유형']+'\',this)">'+(visited?visitLabel+'완료':visitLabel)+'</button>';
+          if(isClosed && p['완료여부'] !== '완료'){
+            html += '<button class="btn small outline" onclick="reportMissingUI(\''+roomId+'\',\''+p['닉네임']+'\')">누락</button>';
+          }
+          html += '</div></div>';
+        }
+      });
+      html += '</div>';
+      box.innerHTML = html;
+    });
+  }
+
+  // 복사 버튼: 값을 복사하면서 미리보기용 새창도 함께 열어줌 (완료처리는 하지 않음 - 완료처리는 방문/참석 버튼에서)
+  function copyAndPreview(value, roomType){
+    copyText(value);
+    if(roomType==='키워드'){
+      window.open('https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=' + encodeURIComponent(value), '_blank');
+    } else if(/^https?:\/\//i.test(value)){
+      window.open(value, '_blank');
+    }
+  }
+
+  function visitUI(roomId, targetNickname, value, roomType, btnEl){
+    apiPost('visit', { roomId: roomId, visitorNickname: currentUser['닉네임'], targetNickname: targetNickname }).then(res=>{
+      if(!res.success){ showMsg(res.message,'err'); return; }
+      if(roomType==='키워드'){
+        window.open('https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=' + encodeURIComponent(value), '_blank');
+        btnEl.textContent = '방문완료';
+      } else {
+        if(/^https?:\/\//i.test(value)) window.open(value, '_blank');
+        btnEl.textContent = '참석완료';
+      }
+      btnEl.classList.remove('visit');
+      btnEl.classList.add('visited');
+      showMsg('처리되었습니다.');
+    });
+  }
+
+  function reportMissingUI(roomId, targetNickname){
+    if(!confirm(targetNickname+'님을 누락 처리(패널티 부여)할까요?')) return;
+    apiPost('reportMissing', { roomId: roomId, reporterNickname: currentUser['닉네임'], targetNickname: targetNickname }).then(res=>{
+      if(res.success) showMsg('누락 처리되었습니다. 패널티가 부여됩니다.');
+      else showMsg(res.message,'err');
+    });
+  }
+
+  function copyText(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showMsg('복사되었습니다.'); }).catch(function(){});
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); showMsg('복사되었습니다.'); } catch(e){}
+      document.body.removeChild(ta);
+    }
+  }
+
+  let creatingRoom = false;
+
+  function createKw(){
+    if(creatingRoom) return;
+    const start = document.getElementById('kwStart').value;
+    const cap = document.getElementById('kwCap').value;
+    const missions = Array.from(document.querySelectorAll('.kwMission:checked')).map(function(c){ return c.value; });
+    if(!start){ alert('시작 시간을 선택해주세요.'); return; }
+    if(!cap || Number(cap) < 1){ alert('모집 인원을 1명 이상 입력해주세요.'); return; }
+    if(!missions.length){ alert('원하는 품앗이(미션)를 1개 이상 선택해주세요.'); return; }
+
+    creatingRoom = true;
+    const btn = document.getElementById('kwCreateBtn');
+    btn.disabled = true; btn.textContent = '생성 중...';
+    document.getElementById('kwProgressWrap').classList.remove('hidden');
+
+    apiPost('createKeywordRoom', {
+      creator: currentUser['닉네임'], startTime: start.replace('T',' ')+':00',
+      capacity: cap,
+      missions: missions,
+      roomName: document.getElementById('kwName').value.trim()
+    }).then(function(res){
+      creatingRoom = false;
+      btn.disabled = false; btn.textContent = '키워드방 만들기';
+      document.getElementById('kwProgressWrap').classList.add('hidden');
+      if(res.success){ showMsg('"'+(res.roomName||res.roomId||'새 방')+'" 생성 완료!'); switchRoomType('키워드'); switchTabProgrammatic('rooms'); }
+      else showMsg(res.message,'err');
+    }).catch(function(){
+      creatingRoom = false;
+      btn.disabled = false; btn.textContent = '키워드방 만들기';
+      document.getElementById('kwProgressWrap').classList.add('hidden');
+      showMsg('생성 중 오류가 발생했습니다. 다시 시도해주세요.','err');
+    });
+  }
+
+  function createLk(){
+    if(creatingRoom) return;
+    const start = document.getElementById('lkStart').value;
+    const cap = document.getElementById('lkCap').value;
+    const waitMin = document.getElementById('lkWait').value;
+    const progressMin = document.getElementById('lkProgress').value;
+    const missions = Array.from(document.querySelectorAll('.lkMission:checked')).map(function(c){ return c.value; });
+    if(!start){ alert('시작 시간을 선택해주세요.'); return; }
+    if(!cap || Number(cap) < 1){ alert('모집 인원을 1명 이상 입력해주세요.'); return; }
+    if(!waitMin || Number(waitMin) < 1){ alert('대기시간을 1분 이상 입력해주세요.'); return; }
+    if(!progressMin || Number(progressMin) < 1){ alert('진행시간을 1분 이상 입력해주세요.'); return; }
+    if(!missions.length){ alert('원하는 품앗이(미션)를 1개 이상 선택해주세요.'); return; }
+
+    creatingRoom = true;
+    const btn = document.getElementById('lkCreateBtn');
+    btn.disabled = true; btn.textContent = '생성 중...';
+    document.getElementById('lkProgressWrap').classList.remove('hidden');
+
+    apiPost('createLinkRoom', {
+      creator: currentUser['닉네임'], startTime: start.replace('T',' ')+':00',
+      capacity: cap,
+      waitMin: waitMin,
+      progressMin: progressMin,
+      missions: missions,
+      roomName: document.getElementById('lkName').value.trim()
+    }).then(function(res){
+      creatingRoom = false;
+      btn.disabled = false; btn.textContent = '링크방 만들기';
+      document.getElementById('lkProgressWrap').classList.add('hidden');
+      if(res.success){ showMsg('"'+(res.roomName||res.roomId||'새 방')+'" 생성 완료!'); switchRoomType('링크'); switchTabProgrammatic('rooms'); }
+      else showMsg(res.message,'err');
+    }).catch(function(){
+      creatingRoom = false;
+      btn.disabled = false; btn.textContent = '링크방 만들기';
+      document.getElementById('lkProgressWrap').classList.add('hidden');
+      showMsg('생성 중 오류가 발생했습니다. 다시 시도해주세요.','err');
+    });
+  }
+
+  function loadMyInfo(){
+    renderDashboard();
+    document.getElementById('calendarBox').innerHTML = '<div class="loading">불러오는 중...</div>';
+    document.getElementById('penaltyBox').innerHTML = '<div class="loading">불러오는 중...</div>';
+
+    apiGet('getWeeklyCalendar', { nickname: currentUser['닉네임'] }).then(function(cal){
+      const days = Object.keys(cal);
+      document.getElementById('calendarBox').innerHTML = days.length
+        ? '<div class="table-wrap"><table>'+days.map(function(d){ return '<tr><th>'+d+'</th><td>'+cal[d]+'회</td></tr>'; }).join('')+'</table></div>'
+        : '<div class="empty">참여 기록이 없어요.</div>';
+    });
+
+    apiGet('getPenaltyRooms', { nickname: currentUser['닉네임'] }).then(function(list){
+      if(!list.length){ document.getElementById('penaltyBox').innerHTML = '<div class="empty">패널티가 없어요. 정상 이용 가능합니다 ✅</div>'; return; }
+      let html = '';
+      list.forEach(function(p){
+        html += '<div class="roomcard"><div class="top"><div class="name">'+p['사유']+'</div><span class="chip bad">미해제</span></div>'
+          + '<div class="meta">발생일 '+p['발생일']+' · 관련방 '+p['RoomID']+'</div>'
+          + '<div class="actions">'
+          + '<button class="btn small ghost" onclick="togglePenaltyDetail(\''+p['PenaltyID']+'\',\''+p['RoomID']+'\')">놓친 목록 보기</button>'
+          + '<button class="btn small" onclick="releaseSelfUI(\''+p['PenaltyID']+'\')">패널티 완료</button>'
+          + '</div><div id="pen-detail-'+p['PenaltyID']+'"></div></div>';
+      });
+      document.getElementById('penaltyBox').innerHTML = html;
+    });
+  }
+
+  function togglePenaltyDetail(penaltyId, roomId){
+    const box = document.getElementById('pen-detail-'+penaltyId);
+    if(box.dataset.open === '1'){ box.innerHTML=''; box.dataset.open='0'; return; }
+    box.dataset.open = '1';
+    renderRoomDetail(roomId, box);
+  }
+
+  function releaseSelfUI(penaltyId){
+    apiPost('releasePenaltySelf', { penaltyId: penaltyId, nickname: currentUser['닉네임'] }).then(function(res){
+      if(res.success){ showMsg('패널티가 해제되었습니다.'); currentUser['패널티상태']='정상'; loadMyInfo(); }
+      else showMsg(res.message,'err');
+    });
+  }
+
+  function copyMyParticipations(){
+    apiGet('getMyParticipations', { nickname: currentUser['닉네임'] }).then(function(list){
+      if(!list.length){ showMsg('참여한 방이 없어요.','err'); return; }
+      const text = list.map(function(r){ return r['참여시각']+' | '+r['유형']+' | '+r['방이름']+' | '+r['완료여부']; }).join('\n');
+      copyText(text);
+      showMsg('내 참여방 목록 '+list.length+'건이 복사되었습니다.');
+    });
+  }
+
+  if(initApi()) boot();
+  updatePreview('kw');
+  updatePreview('lk');
+  apiGet('version').then(function(v){ console.log('서버 버전:', v.version, '| 확인시각:', v.checkedAt); }).catch(function(){});
+</script>
+</body>
+</html>
