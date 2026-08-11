@@ -668,17 +668,24 @@
   function renderRoomDetail(roomId, box){
     box.innerHTML = '<div class="loading">불러오는 중...</div>';
     Promise.all([
-      apiGet('getRoomParticipants', { roomId: roomId }),
+      apiGet('getRoomParticipants', { roomId: roomId, nickname: currentUser['닉네임'] }),
       apiGet('getMyVisits', { roomId: roomId, nickname: currentUser['닉네임'] }),
       apiGet('getRooms')
     ]).then(function(results){
       const list = results[0], myVisits = results[1], allRooms = results[2];
+      if(list && list.error){ box.innerHTML = '<div class="empty" style="padding:14px 0;">'+list.error+'</div>'; return; }
       const room = allRooms.find(function(r){ return r['RoomID']===roomId; }) || {};
       const isClosed = room['상태']==='마감';
       const isKeyword = room['유형']==='키워드';
       const visitLabel = '방문'; // 키워드방/링크방 모두 동일한 용어로 통일
       const typeClass = isKeyword ? 'type-keyword' : 'type-link';
       if(!list.length){ box.innerHTML = '<div class="empty" style="padding:14px 0;">아직 참여자가 없어요.</div>'; return; }
+      // 내 항목이 항상 맨 위에 오도록 정렬 (참여 순서대로만 두면 내 위치가 매번 달라져서 헷갈림)
+      list.sort(function(a,b){
+        const aMe = a['닉네임']===currentUser['닉네임'] ? 0 : 1;
+        const bMe = b['닉네임']===currentUser['닉네임'] ? 0 : 1;
+        return aMe - bMe;
+      });
       let html = '<div class="participantlist '+typeClass+'">';
       list.forEach(function(p){
         const isMe = p['닉네임'] === currentUser['닉네임'];
@@ -699,8 +706,8 @@
             + '<div class="btnrow">'
             + '<button class="btn small ghost" onclick="copyAndPreview(\''+escVal+'\',\''+room['유형']+'\')">📋 복사</button>'
             + '<button class="btn small '+(visited?'visited':'visit')+' '+typeClass+'" id="visitbtn-'+roomId+'-'+p['닉네임']+'" onclick="visitUI(\''+roomId+'\',\''+p['닉네임']+'\',\''+escVal+'\',\''+room['유형']+'\',this)">'+(visited?'✔ '+visitLabel+'완료':'👉 '+visitLabel)+'</button>';
-          if(isClosed && p['완료여부'] !== '완료'){
-            html += '<button class="btn small outline" onclick="reportMissingUI(\''+roomId+'\',\''+p['닉네임']+'\')">누락</button>';
+          if(isClosed){
+            html += '<button class="btn small outline" onclick="reportMissingUI(\''+roomId+'\',\''+p['닉네임']+'\',this)">🚩 신고</button>';
           }
           html += '</div></div></div>';
         }
@@ -741,30 +748,26 @@
 
   function visitUI(roomId, targetNickname, value, roomType, btnEl){
     if(btnEl.disabled) return;
+
+    // 목적지 URL은 클릭 시점에 이미 알고 있으므로, 응답을 기다리지 않고
+    // 클릭 즉시(동기적으로) 바로 최종 주소로 새 창을 엽니다.
+    // (빈 창을 먼저 열고 나중에 주소를 바꾸는 방식은 일부 브라우저에서 빈 창이 열렸다 닫히는 문제가 있었음)
+    if(roomType==='키워드'){
+      window.open('https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=' + encodeURIComponent(value), '_blank');
+    } else if(/^https?:\/\//i.test(value)){
+      window.open(value, '_blank');
+    }
+
     const originalHTML = btnEl.innerHTML;
     btnEl.disabled = true;
     btnEl.innerHTML = '<span class="spinner"></span> 처리중';
 
-    // 클릭한 시점(동기)에 새 창을 미리 열어둬야 브라우저 팝업차단 허용여부 경고가 뜨지 않음
-    // (서버 응답을 기다린 뒤 여는 방식은 "사용자 조작이 아님"으로 판단되어 차단될 수 있음)
-    const willOpen = (roomType==='키워드') || /^https?:\/\//i.test(value);
-    const win = willOpen ? window.open('', '_blank') : null;
-
     apiPost('visit', { roomId: roomId, visitorNickname: currentUser['닉네임'], targetNickname: targetNickname }).then(res=>{
       if(!res.success){
-        if(win) win.close();
         btnEl.disabled = false;
         btnEl.innerHTML = originalHTML;
         showMsg(res.message,'err');
         return;
-      }
-      if(roomType==='키워드'){
-        const url = 'https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=' + encodeURIComponent(value);
-        if(win) win.location.href = url; else window.open(url, '_blank');
-      } else if(/^https?:\/\//i.test(value)){
-        if(win) win.location.href = value; else window.open(value, '_blank');
-      } else if(win){
-        win.close();
       }
       btnEl.disabled = false;
       btnEl.textContent = '방문완료';
@@ -772,18 +775,21 @@
       btnEl.classList.add('visited');
       showMsg('처리되었습니다.');
     }).catch(()=>{
-      if(win) win.close();
       btnEl.disabled = false;
       btnEl.innerHTML = originalHTML;
       showMsg('오류가 발생했습니다. 다시 시도해주세요.','err');
     });
   }
 
-  function reportMissingUI(roomId, targetNickname){
-    if(!confirm(targetNickname+'님을 누락 처리(패널티 부여)할까요?')) return;
+  function reportMissingUI(roomId, targetNickname, btn){
+    if(!confirm(targetNickname+'님이 실제로 품앗이를 하지 않았나요?\n(완료로 표시되어 있어도 실제 방문하지 않았다면 신고해주세요)\n신고 즉시 패널티가 부여됩니다.')) return;
+    if(btn) setBtnLoading(btn, '신고중');
     apiPost('reportMissing', { roomId: roomId, reporterNickname: currentUser['닉네임'], targetNickname: targetNickname }).then(res=>{
-      if(res.success) showMsg('누락 처리되었습니다. 패널티가 부여됩니다.');
-      else showMsg(res.message,'err');
+      if(res.success){ showMsg('신고가 접수되었습니다. 패널티가 부여됩니다.'); if(btn){ btn.textContent = '신고완료'; } }
+      else { showMsg(res.message,'err'); if(btn) clearBtnLoading(btn, '🚩 신고'); }
+    }).catch(function(){
+      showMsg('오류가 발생했습니다. 다시 시도해주세요.','err');
+      if(btn) clearBtnLoading(btn, '🚩 신고');
     });
   }
 
