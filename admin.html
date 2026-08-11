@@ -198,6 +198,7 @@
   function adminLoginUI(){
     const id = document.getElementById('adId').value.trim();
     const pw = document.getElementById('adPw').value;
+    if(!id || !pw){ showMsg('아이디와 비밀번호를 입력해주세요.','err','msgBox'); return; }
     performAdminLogin(id, pw, true);
   }
 
@@ -247,9 +248,9 @@
         html += '<tr><td>'+u['닉네임']+'</td><td>'+u['블로그주소']+'</td><td>'+u['가입일']+'</td><td>'+u['참여횟수']+'</td>'
           + '<td>'+u['패널티상태']+'</td><td><span class="badge '+badge+'">'+u['계정상태']+'</span></td>'
           + '<td>'
-          + '<button class="btn small" onclick="approveUI(\''+u['닉네임']+'\',true)">승인</button> '
-          + '<button class="btn small secondary" onclick="approveUI(\''+u['닉네임']+'\',false)">반려</button> '
-          + '<button class="btn small danger" onclick="lockUI(\''+u['닉네임']+'\', '+(u['계정상태']!=='잠금')+')">'+(u['계정상태']==='잠금'?'잠금해제':'잠금')+'</button>'
+          + '<button class="btn small" onclick="approveUI(\''+u['닉네임']+'\',true,this)">승인</button> '
+          + '<button class="btn small secondary" onclick="approveUI(\''+u['닉네임']+'\',false,this)">반려</button> '
+          + '<button class="btn small danger" onclick="lockUI(\''+u['닉네임']+'\', '+(u['계정상태']!=='잠금')+',this)">'+(u['계정상태']==='잠금'?'잠금해제':'잠금')+'</button>'
           + '</td></tr>';
       });
       html += '</table></div>';
@@ -257,7 +258,8 @@
     });
   }
 
-  function approveUI(nick, approve){
+  function approveUI(nick, approve, btn){
+    if(btn) btn.disabled = true;
     apiPost('approveMember', { nickname: nick, approve: approve }).then(res=>{
       if(res.success){
         showMsg((approve? '승인' : '반려')+' 처리되었습니다. (현재 상태: '+res['계정상태']+')');
@@ -267,7 +269,8 @@
       loadMembers();
     });
   }
-  function lockUI(nick, lock){
+  function lockUI(nick, lock, btn){
+    if(btn) btn.disabled = true;
     apiPost('adminLockUser', { nickname: nick, lock: lock }).then(res=>{
       showMsg(lock ? '계정을 잠갔습니다.' : '잠금을 해제했습니다.');
       loadMembers();
@@ -281,22 +284,23 @@
       let html = '<div class="table-wrap"><table><tr><th>방이름</th><th>RoomID</th><th>유형</th><th>생성자</th><th>시작시간</th><th>대기종료</th><th>마감</th><th>미션</th><th>참석/모집</th><th>상태</th><th>처리</th></tr>';
       rooms.slice().reverse().forEach(r=>{
         const isDeleted = r['상태']==='삭제됨';
-        const badge = isDeleted ? 'gray' : (r['상태']==='완료' ? 'gray' : (r['상태']==='진행중' ? 'ok' : 'wait'));
+        const badge = isDeleted ? 'gray' : (r['상태']==='마감' ? 'gray' : (r['상태']==='진행중' ? 'ok' : 'wait'));
         html += '<tr><td>'+(r['방이름']||'-')+'</td><td>'+r['RoomID']+'</td><td>'+r['유형']+'</td><td>'+r['생성자']+'</td><td>'+r['시작시간']+'</td>'
           + '<td>'+(r['대기종료시각']||'-')+'</td><td>'+(r['마감시각']||'-')+'</td><td>'+(r['미션']||'-')+'</td><td>'+r['현재참석']+' / '+r['모집인원']+'</td>'
           + '<td><span class="badge '+badge+'">'+r['상태']+'</span></td>'
-          + '<td>'+(isDeleted ? '-' : '<button class="btn small danger" onclick="adminDeleteRoomUI(\''+r['RoomID']+'\')">강제삭제</button>')+'</td></tr>';
+          + '<td>'+(isDeleted ? '-' : '<button class="btn small danger" onclick="adminDeleteRoomUI(\''+r['RoomID']+'\',this)">강제삭제</button>')+'</td></tr>';
       });
       html += '</table></div>';
       document.getElementById('roomTable').innerHTML = html;
     });
   }
 
-  function adminDeleteRoomUI(roomId){
+  function adminDeleteRoomUI(roomId, btn){
     if(!confirm('이 방을 강제 삭제할까요? 참여자가 있어도 삭제됩니다. (참여/방문/패널티 기록은 보존됩니다)')) return;
+    if(btn) btn.disabled = true;
     apiPost('adminDeleteRoom', { roomId: roomId }).then(res=>{
       if(res.success){ showMsg('방을 삭제 처리했습니다.'); loadRooms(); }
-      else showMsg(res.message,'err');
+      else { showMsg(res.message,'err'); if(btn) btn.disabled = false; }
     });
   }
 
@@ -336,13 +340,14 @@
       list.slice().reverse().forEach(p=>{
         html += '<tr><td>'+p['PenaltyID']+'</td><td>'+p['닉네임']+'</td><td>'+p['발생일']+'</td><td>'+p['사유']+'</td><td>'+p['RoomID']+'</td>'
           + '<td>'+p['해제여부']+'</td>'
-          + '<td>'+(p['해제여부']==='미해제' ? '<button class="btn small" onclick="removePenaltyUI(\''+p['PenaltyID']+'\')">즉시해제</button>' : '-')+'</td></tr>';
+          + '<td>'+(p['해제여부']==='미해제' ? '<button class="btn small" onclick="removePenaltyUI(\''+p['PenaltyID']+'\',this)">즉시해제</button>' : '-')+'</td></tr>';
       });
       html += '</table></div>';
       document.getElementById('penaltyTable').innerHTML = html;
     });
   }
-  function removePenaltyUI(pid){
+  function removePenaltyUI(pid, btn){
+    if(btn) btn.disabled = true;
     apiPost('adminRemovePenalty', { penaltyId: pid }).then(res=>{
       showMsg('패널티를 해제했습니다.');
       loadPenalties();
@@ -357,13 +362,14 @@
       list.slice().reverse().forEach(r=>{
         html += '<tr><td>'+r['ReportID']+'</td><td>'+r['신고자']+'</td><td>'+r['대상자']+'</td><td>'+r['RoomID']+'</td><td>'+r['사유']+'</td>'
           + '<td>'+r['처리상태']+'</td>'
-          + '<td>'+(r['처리상태']==='대기' ? '<button class="btn small" onclick="resolveReportUI(\''+r['ReportID']+'\')">확인완료</button>' : '-')+'</td></tr>';
+          + '<td>'+(r['처리상태']==='대기' ? '<button class="btn small" onclick="resolveReportUI(\''+r['ReportID']+'\',this)">확인완료</button>' : '-')+'</td></tr>';
       });
       html += '</table></div>';
       document.getElementById('reportTable').innerHTML = html;
     });
   }
-  function resolveReportUI(rid){
+  function resolveReportUI(rid, btn){
+    if(btn) btn.disabled = true;
     apiPost('resolveReport', { reportId: rid }).then(res=>{
       showMsg('신고를 처리 완료했습니다.');
       loadReports();
