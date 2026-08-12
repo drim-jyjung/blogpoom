@@ -242,10 +242,10 @@
     document.getElementById('memberList').innerHTML = '<div class="loading">불러오는 중...</div>';
     apiGet('getUsers').then(users=>{
       if(!users.length){ document.getElementById('memberList').innerHTML='<div class="empty">회원이 없습니다.</div>'; return; }
-      let html = '<div class="table-wrap"><table><tr><th>닉네임</th><th>블로그</th><th>가입일</th><th>참여</th><th>패널티</th><th>상태</th><th>처리</th></tr>';
+      let html = '<div class="table-wrap"><table><tr><th>닉네임</th><th>블로그명</th><th>블로그</th><th>가입일</th><th>참여</th><th>패널티</th><th>상태</th><th>처리</th></tr>';
       users.forEach(u=>{
         const badge = u['계정상태']==='승인' ? 'ok' : (u['계정상태']==='대기' ? 'wait' : 'bad');
-        html += '<tr><td>'+u['닉네임']+'</td><td>'+u['블로그주소']+'</td><td>'+u['가입일']+'</td><td>'+u['참여횟수']+'</td>'
+        html += '<tr><td>'+u['닉네임']+'</td><td>'+(u['블로그명']||'-')+'</td><td>'+u['블로그주소']+'</td><td>'+u['가입일']+'</td><td>'+u['참여횟수']+'</td>'
           + '<td>'+u['패널티상태']+'</td><td><span class="badge '+badge+'">'+u['계정상태']+'</span></td>'
           + '<td>'
           + '<button class="btn small" onclick="approveUI(\''+u['닉네임']+'\',true,this)">승인</button> '
