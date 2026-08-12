@@ -691,10 +691,10 @@
     const box = document.getElementById('detail-'+roomId);
     if(box.dataset.open === '1'){ box.innerHTML=''; box.dataset.open='0'; return; }
     box.dataset.open = '1';
-    renderRoomDetail(roomId, box);
+    renderRoomDetail(roomId, box, false);
   }
 
-  function renderRoomDetail(roomId, box){
+  function renderRoomDetail(roomId, box, penaltyMode){
     box.innerHTML = '<div class="loading">불러오는 중...</div>';
     Promise.all([
       apiGet('getRoomParticipants', { roomId: roomId, nickname: currentUser['닉네임'] }),
@@ -705,6 +705,9 @@
       if(list && list.error){ box.innerHTML = '<div class="empty" style="padding:14px 0;">'+list.error+'</div>'; return; }
       const room = allRooms.find(function(r){ return r['RoomID']===roomId; }) || {};
       const isClosed = room['상태']==='마감';
+      // 마감 후엔 원칙적으로 방문(완료처리) 불가 - 복사만 제공. 단, 패널티 해제 화면(penaltyMode)에서는
+      // 실제로 그 방에서 패널티를 받은 사람만 예외적으로 방문을 계속할 수 있음 (서버에서도 동일하게 검증됨)
+      const visitDisabled = isClosed && !penaltyMode;
       const isKeyword = room['유형']==='키워드';
       const visitLabel = '방문'; // 키워드방/링크방 모두 동일한 용어로 통일
       const typeClass = isKeyword ? 'type-keyword' : 'type-link';
@@ -744,9 +747,13 @@
             + '<div class="pactions">'
             + '<span class="statuschip '+(visited?'ok':'wait')+'">'+(visited?'✅ '+visitLabel+'완료':'⏳ '+visitLabel+'대기')+'</span>'
             + '<div class="btnrow">'
-            + '<button class="btn small ghost" onclick="copyAndPreview(\''+escVal+'\',\''+room['유형']+'\')">📋 복사</button>'
-            + '<button class="btn small '+(visited?'visited':'visit')+' '+typeClass+'" id="visitbtn-'+roomId+'-'+p['닉네임']+'" onclick="visitUI(\''+roomId+'\',\''+p['닉네임']+'\',\''+escVal+'\',\''+room['유형']+'\',this)">'+(visited?'✔ '+visitLabel+'완료':'👉 '+visitLabel)+'</button>';
-          if(isClosed){
+            + '<button class="btn small ghost" onclick="copyAndPreview(\''+escVal+'\',\''+room['유형']+'\')">📋 복사</button>';
+          if(visitDisabled){
+            html += '<button class="btn small ghost" disabled title="마감된 방은 방문할 수 없어요">🔒 마감</button>';
+          } else {
+            html += '<button class="btn small '+(visited?'visited':'visit')+' '+typeClass+'" id="visitbtn-'+roomId+'-'+p['닉네임']+'" onclick="visitUI(\''+roomId+'\',\''+p['닉네임']+'\',\''+escVal+'\',\''+room['유형']+'\',this)">'+(visited?'✔ '+visitLabel+'완료':'👉 '+visitLabel)+'</button>';
+          }
+          if(isClosed && !penaltyMode){
             html += '<button class="btn small outline" onclick="reportMissingUI(\''+roomId+'\',\''+p['닉네임']+'\',this)">🚩 신고</button>';
           }
           html += '</div></div></div>';
@@ -754,7 +761,7 @@
       });
       html += '</div>';
 
-      if(isClosed){
+      if(isClosed && !penaltyMode){
         const incomplete = list.filter(function(p){ return p['완료여부'] !== '완료'; });
         if(incomplete.length){
           const namesStr = incomplete.map(function(p){ return p['닉네임']; }).join(', ');
@@ -947,7 +954,7 @@
     const box = document.getElementById('pen-detail-'+penaltyId);
     if(box.dataset.open === '1'){ box.innerHTML=''; box.dataset.open='0'; return; }
     box.dataset.open = '1';
-    renderRoomDetail(roomId, box);
+    renderRoomDetail(roomId, box, true);
   }
 
   function releaseSelfUI(penaltyId, btn){
