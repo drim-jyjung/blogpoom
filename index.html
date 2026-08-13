@@ -496,6 +496,11 @@
   }
 
   function renderDashboard(){
+    // 방어코드: 대시보드가 그려지는 시점엔 로그인 폼이 항상 숨겨져 있어야 함
+    document.getElementById('authSection').classList.add('hidden');
+    document.getElementById('apiConfigBar').classList.add('hidden');
+    document.getElementById('bootLoading').classList.add('hidden');
+
     const hasPenalty = currentUser['패널티상태'] === '패널티';
     const isLocked = currentUser['계정상태'] === '잠금';
     const restricted = hasPenalty || isLocked;
