@@ -339,7 +339,7 @@
   let currentRoomType = '키워드';
 
   function initApi(){
-    if(!API_URL){ document.getElementById('apiConfigBar').classList.remove('hidden'); return false; }
+    if(!API_URL){ showScreen('apiConfigBar'); return false; }
     return true;
   }
   function saveApiUrl(){
@@ -347,7 +347,6 @@
     if(!v){ showMsg('URL을 입력해주세요.','err'); return; }
     localStorage.setItem('PUMASI_API_URL', v);
     API_URL = v;
-    document.getElementById('apiConfigBar').classList.add('hidden');
     boot();
   }
   function resetApiUrl(){
@@ -369,6 +368,23 @@
       body: JSON.stringify(Object.assign({ action: action }, params || {}))
     }).then(r => r.json());
   }
+  // 화면 4개(서버설정/부팅로딩/로그인폼/앱본체) 중 지정한 것만 보이게 하는 확정적 헬퍼.
+  // CSS class="hidden" 토글뿐 아니라 style.display도 직접 강제로 지정해서,
+  // 혹시 다른 원인으로 hidden 클래스가 안 먹더라도 무조건 화면이 맞게 전환되도록 함.
+  function showScreen(idToShow){
+    ['apiConfigBar','bootLoading','authSection','appSection'].forEach(function(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      if(id === idToShow){
+        el.classList.remove('hidden');
+        el.style.display = '';
+      } else {
+        el.classList.add('hidden');
+        el.style.display = 'none';
+      }
+    });
+  }
+
   function showMsg(text, type){
     const box = document.getElementById('msgBox');
     box.innerHTML = '<div class="msg ' + (type||'ok') + '">' + text + '</div>';
@@ -443,21 +459,18 @@
       if(res.success){
         currentUser = res.user;
         try { localStorage.setItem('PUMASI_SESSION', JSON.stringify({ nickname: nick, password: pw })); } catch(e){}
-        document.getElementById('authSection').classList.add('hidden');
-        document.getElementById('bootLoading').classList.add('hidden');
-        document.getElementById('appSection').classList.remove('hidden');
+        showScreen('appSection');
         document.getElementById('bottomNav').style.display = 'flex';
         document.getElementById('userInfoBar').innerHTML = '<button class="iconbtn" onclick="logout()">로그아웃</button>';
-        renderDashboard();
+        const restricted = renderDashboard();
+        if(restricted){ switchTabProgrammatic('my'); } else { loadRooms(); }
       } else {
         try { localStorage.removeItem('PUMASI_SESSION'); } catch(e){}
-        document.getElementById('bootLoading').classList.add('hidden');
-        document.getElementById('authSection').classList.remove('hidden');
+        showScreen('authSection');
         if(showErrors) showMsg(res.message,'err');
       }
     }).catch(()=>{
-      document.getElementById('bootLoading').classList.add('hidden');
-      document.getElementById('authSection').classList.remove('hidden');
+      showScreen('authSection');
     });
   }
 
@@ -479,27 +492,24 @@
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('PUMASI_SESSION') || 'null'); } catch(e){}
     if(saved && saved.nickname && saved.password){
-      document.getElementById('bootLoading').classList.remove('hidden');
+      showScreen('bootLoading');
       performLogin(saved.nickname, saved.password, false);
     } else {
-      document.getElementById('authSection').classList.remove('hidden');
+      showScreen('authSection');
     }
   }
 
   function logout(){
     currentUser = null;
     try { localStorage.removeItem('PUMASI_SESSION'); } catch(e){}
-    document.getElementById('appSection').classList.add('hidden');
+    showScreen('authSection');
     document.getElementById('bottomNav').style.display = 'none';
-    document.getElementById('authSection').classList.remove('hidden');
     document.getElementById('userInfoBar').innerHTML = '';
   }
 
   function renderDashboard(){
     // 방어코드: 대시보드가 그려지는 시점엔 로그인 폼이 항상 숨겨져 있어야 함
-    document.getElementById('authSection').classList.add('hidden');
-    document.getElementById('apiConfigBar').classList.add('hidden');
-    document.getElementById('bootLoading').classList.add('hidden');
+    showScreen('appSection');
 
     const hasPenalty = currentUser['패널티상태'] === '패널티';
     const isLocked = currentUser['계정상태'] === '잠금';
@@ -517,11 +527,7 @@
     document.querySelectorAll('.bottomnav .tabBtn')[0].disabled = restricted;
     document.querySelectorAll('.bottomnav .tabBtn')[1].disabled = restricted;
 
-    if(restricted){
-      switchTabProgrammatic('my');
-    } else {
-      loadRooms();
-    }
+    return restricted; // 이 다음 뭘 로드할지는 호출한 쪽에서 결정 (여기서 재호출하면 무한루프 위험)
   }
 
   function switchTab(tab){
