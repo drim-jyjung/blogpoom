@@ -189,6 +189,11 @@
 
     <div id="bootLoading" class="loading hidden">로그인 확인 중...</div>
 
+    <div id="sharedRoomPreview" class="card hidden" style="border:2px solid var(--primary);">
+      <div class="hint" style="margin-top:0;">🔗 초대받은 품앗이방</div>
+      <div id="sharedRoomBody"></div>
+    </div>
+
     <div id="authSection" class="card hidden">
       <div class="segment">
         <button id="tabLoginBtn" class="active" onclick="switchAuth('login')">로그인</button>
@@ -456,6 +461,7 @@
         document.getElementById('userInfoBar').innerHTML = '<button class="iconbtn" onclick="logout()">로그아웃</button>';
         const restricted = renderDashboard();
         if(restricted){ switchTabProgrammatic('my'); } else { loadRooms(); }
+        if(sharedRoomId) loadSharedRoomPreview();
       } else {
         try { localStorage.removeItem('PUMASI_SESSION'); } catch(e){}
         showScreen('authSection');
@@ -480,6 +486,62 @@
 
   // 저장된 세션이 있으면 로그인 화면을 먼저 보여주지 않고, 확인 중 로딩만 표시한 뒤
   // 결과에 따라 바로 앱 화면 또는 로그인 화면으로 전환 (새로고침 시 화면 깜빡임 방지)
+  // ===================== 공유 링크(?room=RoomID) 미리보기 =====================
+  // 카톡방 등에 "이거 같이해요" 링크로 공유했을 때, 로그인 여부와 무관하게
+  // 방 기본정보를 보여주고 비회원은 가입을, 회원은 그 방 참여를 유도한다.
+  // 참여 자체는 기존 openJoinModal()을 그대로 재사용 (참여 로직 중복 없음).
+  let sharedRoomId = null;
+
+  function initSharedRoomFromUrl(){
+    const params = new URLSearchParams(window.location.search);
+    sharedRoomId = params.get('room');
+    if(sharedRoomId) loadSharedRoomPreview();
+  }
+
+  function loadSharedRoomPreview(){
+    apiGet('getRoomPreview', { roomId: sharedRoomId }).then(function(r){
+      const box = document.getElementById('sharedRoomPreview');
+      const body = document.getElementById('sharedRoomBody');
+      if(!r || r.error){
+        body.innerHTML = '<div class="empty">'+(r && r.error ? r.error : '방을 찾을 수 없어요.')+'</div>';
+        box.classList.remove('hidden');
+        return;
+      }
+      const chipClass = r['상태']==='마감' ? 'gray' : (r['상태']==='진행중' ? 'ok' : 'wait');
+      const typeClass = r['유형']==='키워드' ? 'type-keyword' : 'type-link';
+      let html = '<div class="roomcard '+typeClass+'">'
+        + '<div class="top"><div><span class="typechip '+typeClass+'">'+r['유형']+'</span>'+(r['방이름']||r['RoomID'])+'</div>'
+        + '<span class="chip '+chipClass+'">'+r['상태']+'</span></div>'
+        + '<div class="meta">'+r['생성자']+' · '+(r['미션']||'-')+'</div>'
+        + '<div class="meta">👥 '+r['현재참석']+'/'+r['모집인원']+'명 · 🕐 '+timeOnly(r['시작시간'])+' 시작 · 🏁 '+timeOnly(r['마감시각'])+' 마감</div>';
+
+      if(r['상태'] !== '대기'){
+        html += '<div class="actions"><button class="btn small" disabled>지금은 참여할 수 없는 방이에요</button></div>';
+      } else if(r['정원마감여부']){
+        html += '<div class="actions"><button class="btn small" disabled>모집마감</button></div>';
+      } else if(currentUser){
+        html += '<div class="actions"><button class="btn small" onclick="openJoinModal(\''+r['RoomID']+'\',\''+r['유형']+'\')">참여하기</button></div>';
+      } else {
+        html += '<div class="actions"><button class="btn small" onclick="goSignupFromShare()">회원가입하고 참여하기</button></div>'
+          + '<p class="muted" style="margin-top:6px;">이미 회원이면 아래에서 로그인해주세요. 가입 후엔 운영자 승인이 필요해요.</p>';
+      }
+      html += '</div>';
+      body.innerHTML = html;
+      box.classList.remove('hidden');
+    });
+  }
+
+  function copyShareLink(roomId){
+    const base = window.location.origin + window.location.pathname;
+    copyText(base + '?room=' + roomId);
+  }
+
+  function goSignupFromShare(){
+    switchAuth('signup');
+    document.getElementById('suNick').focus();
+    document.getElementById('signupForm').scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+
   function boot(){
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem('PUMASI_SESSION') || 'null'); } catch(e){}
@@ -497,6 +559,7 @@
     showScreen('authSection');
     document.getElementById('bottomNav').style.display = 'none';
     document.getElementById('userInfoBar').innerHTML = '';
+    if(sharedRoomId) loadSharedRoomPreview();
   }
 
   function renderDashboard(){
@@ -610,6 +673,7 @@
           + '<div class="actions">'
           + joinBtn
           + '<button class="btn small ghost" onclick="toggleDetail(\''+r['RoomID']+'\')">참여자보기</button>'
+          + '<button class="btn small ghost" onclick="copyShareLink(\''+r['RoomID']+'\')">🔗 링크복사</button>'
           + (isOwner ? '<button class="btn small outline" onclick="deleteRoomUI(\''+r['RoomID']+'\')">삭제</button>' : '')
           + '</div><div id="detail-'+r['RoomID']+'"></div>'
           + '</div>';
@@ -1021,6 +1085,7 @@
   }
 
   if(initApi()) boot();
+  initSharedRoomFromUrl();
   updatePreview('kw');
   updatePreview('lk');
   apiGet('version').then(function(v){ console.log('서버 버전:', v.version, '| 확인시각:', v.checkedAt); }).catch(function(){});
