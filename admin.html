@@ -116,7 +116,6 @@
     <div class="content">
       <div class="content-header">
         <h1 id="pageTitle">회원관리</h1>
-        <button class="pill" onclick="resetApiUrl()">서버 재설정</button>
       </div>
       <div id="msgBoxMain"></div>
 
@@ -166,13 +165,6 @@
     API_URL = v;
     document.getElementById('apiConfigWrap').classList.add('hidden');
     document.getElementById('loginWrap').classList.remove('hidden');
-  }
-
-  function resetApiUrl(){
-    const v = prompt('새 배포 URL을 입력하세요 (취소하면 기존 주소 유지)', API_URL);
-    if(!v) return;
-    localStorage.setItem('PUMASI_API_URL', v.trim());
-    location.reload();
   }
 
   function apiGet(action, params){
