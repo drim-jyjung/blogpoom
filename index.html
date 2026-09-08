@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>품앗이</title>
+<meta name="referrer" content="no-referrer">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -65,6 +66,7 @@
   .typechip.type-link{background:var(--type-link-bg);color:var(--type-link);}
   .participantlist.type-keyword{background:var(--type-keyword-bg);}
   .participantlist.type-link{background:var(--type-link-bg);}
+  .detail-refresh{display:flex;justify-content:flex-end;margin-top:6px;}
   .participantlist{margin-top:8px;padding:6px;background:#f6f7f8;border-radius:12px;}
   .participantitem{background:#fff;border-radius:10px;padding:9px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;text-align:left;}
   .participantitem:last-child{margin-bottom:0;}
@@ -452,7 +454,7 @@
   }
 
   function performLogin(nick, pw, showErrors){
-    return apiPost('login', { nickname: nick, password: pw }).then(res=>{
+    return apiPost('loginAndBootstrap', { nickname: nick, password: pw, roomType: currentRoomType }).then(res=>{
       if(res.success){
         currentUser = res.user;
         try { localStorage.setItem('PUMASI_SESSION', JSON.stringify({ nickname: nick, password: pw })); } catch(e){}
@@ -460,7 +462,14 @@
         document.getElementById('bottomNav').style.display = 'flex';
         document.getElementById('userInfoBar').innerHTML = '<button class="iconbtn" onclick="logout()">로그아웃</button>';
         const restricted = renderDashboard();
-        if(restricted){ switchTabProgrammatic('my'); } else { loadRooms(); }
+        if(restricted){
+          switchTabProgrammatic('my');
+        } else if(sharedRoomFocusMode){
+          loadRooms(); // 초대링크 포커스모드면 목록 대신 안내문구를 보여줘야 하므로 별도 처리
+        } else {
+          // 로그인 응답에 이미 방목록이 함께 왔으므로, 재조회 없이 바로 그려서 서버 왕복을 한 번 아낀다
+          renderRoomListHTML(res.rooms || []);
+        }
         if(sharedRoomId) loadSharedRoomPreview();
       } else {
         try { localStorage.removeItem('PUMASI_SESSION'); } catch(e){}
@@ -491,11 +500,15 @@
   // 방 기본정보를 보여주고 비회원은 가입을, 회원은 그 방 참여를 유도한다.
   // 참여 자체는 기존 openJoinModal()을 그대로 재사용 (참여 로직 중복 없음).
   let sharedRoomId = null;
+  let sharedRoomFocusMode = false; // true면 초대받은 방에 집중시키기 위해 일반 방목록은 접어둠
 
   function initSharedRoomFromUrl(){
     const params = new URLSearchParams(window.location.search);
     sharedRoomId = params.get('room');
-    if(sharedRoomId) loadSharedRoomPreview();
+    if(sharedRoomId){
+      sharedRoomFocusMode = true;
+      loadSharedRoomPreview();
+    }
   }
 
   function loadSharedRoomPreview(){
@@ -522,8 +535,11 @@
       } else if(currentUser){
         html += '<div class="actions"><button class="btn small" onclick="openJoinModal(\''+r['RoomID']+'\',\''+r['유형']+'\')">참여하기</button></div>';
       } else {
-        html += '<div class="actions"><button class="btn small" onclick="goSignupFromShare()">회원가입하고 참여하기</button></div>'
-          + '<p class="muted" style="margin-top:6px;">이미 회원이면 아래에서 로그인해주세요. 가입 후엔 운영자 승인이 필요해요.</p>';
+        html += '<div class="actions">'
+          + '<button class="btn small" onclick="goLoginFromShare()">로그인하고 참여하기</button>'
+          + '<button class="btn small ghost" onclick="goSignupFromShare()">처음이라면 회원가입</button>'
+          + '</div>'
+          + '<p class="muted" style="margin-top:6px;">가입 후엔 운영자 승인이 필요해요.</p>';
       }
       html += '</div>';
       body.innerHTML = html;
@@ -534,6 +550,12 @@
   function copyShareLink(roomId){
     const base = window.location.origin + window.location.pathname;
     copyText(base + '?room=' + roomId);
+  }
+
+  function goLoginFromShare(){
+    switchAuth('login');
+    document.getElementById('loginNick').focus();
+    document.getElementById('loginForm').scrollIntoView({ behavior:'smooth', block:'center' });
   }
 
   function goSignupFromShare(){
@@ -585,6 +607,15 @@
     return restricted; // 이 다음 뭘 로드할지는 호출한 쪽에서 결정 (여기서 재호출하면 무한루프 위험)
   }
 
+  let hasLeftRoomsTab = false; // 방목록 탭을 벗어난 적이 있는지 (한번만 포커스모드 유지용)
+
+  // 탭 전환 시 공통으로 거치는 처리: 방목록 탭을 벗어났다가 다시 돌아오면
+  // 초대링크 포커스모드를 자동으로 풀어서(한번만 보여주고) 전체 목록이 보이게 함
+  function handleTabVisit(tab){
+    if(tab !== 'rooms'){ hasLeftRoomsTab = true; return; }
+    if(sharedRoomFocusMode && hasLeftRoomsTab) sharedRoomFocusMode = false;
+  }
+
   function switchTab(tab){
     const restricted = currentUser && (currentUser['계정상태']==='잠금' || currentUser['패널티상태']==='패널티');
     if(restricted && tab!=='my'){
@@ -596,16 +627,19 @@
     });
     document.querySelectorAll('.bottomnav .tabBtn').forEach(b=>b.classList.remove('active'));
     event.currentTarget.classList.add('active');
+    handleTabVisit(tab);
     if(tab==='rooms') loadRooms();
     if(tab==='my') loadMyInfo();
   }
 
-  function switchTabProgrammatic(tab){
+  function switchTabProgrammatic(tab, skipLoad){
     ['rooms','create','my'].forEach(t=>{
       document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab);
     });
     const idx = tab==='rooms'?0:(tab==='create'?1:2);
     document.querySelectorAll('.bottomnav .tabBtn').forEach((b,i)=> b.classList.toggle('active', i===idx));
+    handleTabVisit(tab);
+    if(skipLoad) return;
     if(tab==='rooms') loadRooms();
     if(tab==='my') loadMyInfo();
   }
@@ -620,7 +654,7 @@
     document.getElementById('createPane-keyword').classList.toggle('hidden', type!=='keyword');
     document.getElementById('createPane-link').classList.toggle('hidden', type!=='link');
   }
-  function switchRoomType(type){
+  function switchRoomType(type, skipLoad){
     currentRoomType = type;
     document.getElementById('roomTabKw').classList.toggle('active', type==='키워드');
     document.getElementById('roomTabLk').classList.toggle('active', type==='링크');
@@ -628,7 +662,7 @@
     const card = document.getElementById('roomListCard');
     card.classList.toggle('type-keyword-pane', type==='키워드');
     card.classList.toggle('type-link-pane', type==='링크');
-    loadRooms();
+    if(!skipLoad) loadRooms();
   }
 
   function hourFrom(inputId){
@@ -651,8 +685,19 @@
   }
 
   function loadRooms(){
+    if(sharedRoomFocusMode){
+      document.getElementById('roomList').innerHTML =
+        '<div class="empty">🔗 위에서 초대받은 방을 먼저 확인해주세요.<br><span class="muted">다른 탭에 다녀오시면 전체 방목록도 볼 수 있어요.</span></div>';
+      return Promise.resolve();
+    }
     document.getElementById('roomList').innerHTML = '<div class="loading">불러오는 중...</div>';
     return apiGet('getTodayRooms', { type: currentRoomType }).then(rooms=>{
+      renderRoomListHTML(rooms);
+    });
+  }
+
+  // 방목록 화면 그리기만 담당 (데이터는 로그인 시 함께 받아온 것을 재사용할 수도, 새로 조회한 것일 수도 있음)
+  function renderRoomListHTML(rooms){
       if(!rooms.length){ document.getElementById('roomList').innerHTML = '<div class="empty">오늘 운영 중인 '+currentRoomType+'방이 없어요 🙂</div>'; return; }
       let html = '';
       rooms.slice().reverse().forEach(r=>{
@@ -679,7 +724,6 @@
           + '</div>';
       });
       document.getElementById('roomList').innerHTML = html;
-    });
   }
 
   function deleteRoomUI(roomId){
@@ -750,6 +794,7 @@
           if(box) renderRoomDetail(roomId, box);
         } else {
           showMsg('참여 완료! 참여자 목록을 보여드릴게요.');
+          if(sharedRoomFocusMode && roomId === sharedRoomId) sharedRoomFocusMode = false;
           // 참여하기 -> 등록 -> 자동으로 참여자보기까지 이어지도록 (목록 갱신 후 상세 오픈)
           loadRooms().then(()=>{
             const box = document.getElementById('detail-'+roomId);
@@ -793,14 +838,15 @@
       const isKeyword = room['유형']==='키워드';
       const visitLabel = '방문'; // 키워드방/링크방 모두 동일한 용어로 통일
       const typeClass = isKeyword ? 'type-keyword' : 'type-link';
-      if(!list.length){ box.innerHTML = '<div class="empty" style="padding:14px 0;">아직 참여자가 없어요.</div>'; return; }
+      if(!list.length){ box.innerHTML = '<div class="empty" style="padding:14px 0;">아직 참여자가 없어요.<br><button class="btn small ghost" style="width:auto;margin-top:8px;" onclick="renderRoomDetail(\''+roomId+'\', this.closest(\'.empty\').parentNode, '+(penaltyMode?'true':'false')+')">🔄 새로고침</button></div>'; return; }
       // 내 항목이 항상 맨 위에 오도록 정렬 (참여 순서대로만 두면 내 위치가 매번 달라져서 헷갈림)
       list.sort(function(a,b){
         const aMe = a['닉네임']===currentUser['닉네임'] ? 0 : 1;
         const bMe = b['닉네임']===currentUser['닉네임'] ? 0 : 1;
         return aMe - bMe;
       });
-      let html = '<div class="participantlist '+typeClass+'">';
+      let html = '<div class="detail-refresh"><button class="btn small ghost" onclick="renderRoomDetail(\''+roomId+'\', this.closest(\'.detail-refresh\').parentNode, '+(penaltyMode?'true':'false')+')">🔄 새로고침</button></div>';
+      html += '<div class="participantlist '+typeClass+'">';
       list.forEach(function(p){
         const isMe = p['닉네임'] === currentUser['닉네임'];
         const visited = myVisits.indexOf(p['닉네임']) !== -1;
@@ -869,9 +915,9 @@
   function copyAndPreview(value, roomType){
     copyText(value);
     if(roomType==='키워드'){
-      window.open('https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=' + encodeURIComponent(value), '_blank');
+      window.open('https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=' + encodeURIComponent(value), '_blank', 'noopener,noreferrer');
     } else if(/^https?:\/\//i.test(value)){
-      window.open(value, '_blank');
+      window.open(value, '_blank', 'noopener,noreferrer');
     }
   }
 
@@ -880,9 +926,9 @@
 
     // 목적지 URL은 클릭 시점에 이미 알고 있으므로, 응답을 기다리지 않고 클릭 즉시(동기적으로) 새 창을 엽니다.
     if(roomType==='키워드'){
-      window.open('https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=' + encodeURIComponent(value), '_blank');
+      window.open('https://search.naver.com/search.naver?ssc=tab.blog.all&sm=tab_jum&query=' + encodeURIComponent(value), '_blank', 'noopener,noreferrer');
     } else if(/^https?:\/\//i.test(value)){
-      window.open(value, '_blank');
+      window.open(value, '_blank', 'noopener,noreferrer');
     }
 
     const originalHTML = btnEl.innerHTML;
@@ -956,7 +1002,12 @@
       creatingRoom = false;
       clearBtnLoading(btn, '키워드방 만들기');
       document.getElementById('kwProgressWrap').classList.add('hidden');
-      if(res.success){ showMsg('"'+(res.roomName||res.roomId||'새 방')+'" 생성 완료!'); switchRoomType('키워드'); switchTabProgrammatic('rooms'); }
+      if(res.success){
+        showMsg('"'+(res.roomName||res.roomId||'새 방')+'" 생성 완료!');
+        switchRoomType('키워드', true);
+        switchTabProgrammatic('rooms', true);
+        if(sharedRoomFocusMode) loadRooms(); else renderRoomListHTML(res.rooms || []);
+      }
       else showMsg(res.message,'err');
     }).catch(function(){
       creatingRoom = false;
@@ -995,7 +1046,12 @@
       creatingRoom = false;
       clearBtnLoading(btn, '링크방 만들기');
       document.getElementById('lkProgressWrap').classList.add('hidden');
-      if(res.success){ showMsg('"'+(res.roomName||res.roomId||'새 방')+'" 생성 완료!'); switchRoomType('링크'); switchTabProgrammatic('rooms'); }
+      if(res.success){
+        showMsg('"'+(res.roomName||res.roomId||'새 방')+'" 생성 완료!');
+        switchRoomType('링크', true);
+        switchTabProgrammatic('rooms', true);
+        if(sharedRoomFocusMode) loadRooms(); else renderRoomListHTML(res.rooms || []);
+      }
       else showMsg(res.message,'err');
     }).catch(function(){
       creatingRoom = false;
@@ -1088,7 +1144,8 @@
   initSharedRoomFromUrl();
   updatePreview('kw');
   updatePreview('lk');
-  apiGet('version').then(function(v){ console.log('서버 버전:', v.version, '| 확인시각:', v.checkedAt); }).catch(function(){});
+  // 서버 버전 확인은 이제 자동으로 호출하지 않습니다 (모든 사용자 페이지로드마다 불필요한 서버 왕복이 추가되던 것을 제거).
+  // 필요하면 브라우저 콘솔에서 apiGet('version').then(v=>console.log(v)) 를 직접 실행해서 확인할 수 있습니다.
 </script>
 </body>
 </html>
