@@ -454,7 +454,7 @@
   }
 
   function performLogin(nick, pw, showErrors){
-    return apiPost('loginAndBootstrap', { nickname: nick, password: pw, roomType: currentRoomType }).then(res=>{
+    return apiPost('login', { nickname: nick, password: pw }).then(res=>{
       if(res.success){
         currentUser = res.user;
         try { localStorage.setItem('PUMASI_SESSION', JSON.stringify({ nickname: nick, password: pw })); } catch(e){}
@@ -464,11 +464,8 @@
         const restricted = renderDashboard();
         if(restricted){
           switchTabProgrammatic('my');
-        } else if(sharedRoomFocusMode){
-          loadRooms(); // 초대링크 포커스모드면 목록 대신 안내문구를 보여줘야 하므로 별도 처리
         } else {
-          // 로그인 응답에 이미 방목록이 함께 왔으므로, 재조회 없이 바로 그려서 서버 왕복을 한 번 아낀다
-          renderRoomListHTML(res.rooms || []);
+          loadRooms();
         }
         if(sharedRoomId) loadSharedRoomPreview();
       } else {
@@ -1006,7 +1003,7 @@
         showMsg('"'+(res.roomName||res.roomId||'새 방')+'" 생성 완료!');
         switchRoomType('키워드', true);
         switchTabProgrammatic('rooms', true);
-        if(sharedRoomFocusMode) loadRooms(); else renderRoomListHTML(res.rooms || []);
+        loadRooms();
       }
       else showMsg(res.message,'err');
     }).catch(function(){
@@ -1050,7 +1047,7 @@
         showMsg('"'+(res.roomName||res.roomId||'새 방')+'" 생성 완료!');
         switchRoomType('링크', true);
         switchTabProgrammatic('rooms', true);
-        if(sharedRoomFocusMode) loadRooms(); else renderRoomListHTML(res.rooms || []);
+        loadRooms();
       }
       else showMsg(res.message,'err');
     }).catch(function(){
