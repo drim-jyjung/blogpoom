@@ -570,7 +570,7 @@
     try { saved = JSON.parse(localStorage.getItem('PUMASI_SESSION') || 'null'); } catch(e){}
     if(saved && saved.nickname && saved.password){
       showScreen('bootLoading');
-      performLogin(saved.nickname, saved.password, false);
+      performLogin(saved.nickname, saved.password, true);
     } else {
       showScreen('authSection');
     }
